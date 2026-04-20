@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1090, minimum-scale=1.0">
+<title>유프레시 관리자</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#3182F6;--blue-l:#EBF3FF;--blue-ll:#F0F6FF;--blue-dk:#1B64DA;
+  --ink:#191F28;--ink2:#333D4B;--ink3:#6B7684;--ink4:#B0B8C1;--ink5:#F2F4F6;
+  --page:#F5F6F8;--card:#FFFFFF;--sep:rgba(0,0,0,0.08);
+  --green:#05C072;--green-l:#E8FAF2;--green-dk:#027A48;
+  --orange:#FF6B00;--orange-l:#FFF1E8;--orange-dk:#7D3800;
+  --red:#F04452;--red-l:#FFF0F1;--red-dk:#7D1B16;
+  --sidebar:220px;
+}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--page);color:var(--ink);font-size:14px;min-height:100vh;min-width:1090px;overflow-x:auto}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--ink);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;height:100vh;
+  z-index:100;
+}
+.sidebar-logo{
+  padding:24px 20px 20px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.logo-text{
+  font-family:'Outfit',sans-serif;
+  font-size:20px;font-weight:700;
+  color:#fff;letter-spacing:-.3px;
+}
+.logo-text span{color:var(--blue)}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;letter-spacing:.2px}
+.sidebar-nav{flex:1;padding:12px 0}
+.nav-section{padding:16px 20px 6px;font-size:10px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:.8px;text-transform:uppercase}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 20px;
+  font-size:13px;font-weight:500;color:rgba(255,255,255,.6);
+  cursor:pointer;transition:all .15s;
+  border-left:3px solid transparent;
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.on{background:rgba(49,130,246,.15);color:#fff;border-left-color:var(--blue)}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-footer{
+  padding:16px 20px;
+  border-top:1px solid rgba(255,255,255,.08);
+  font-size:12px;color:rgba(255,255,255,.4);
+}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── TOP BAR ── */
+.topbar{
+  height:60px;background:var(--card);
+  border-bottom:1px solid var(--sep);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  position:sticky;top:0;z-index:50;
+  max-width:100%;
+}
+.tb-title{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.tb-right{display:flex;align-items:center;gap:12px}
+.tb-badge{
+  background:var(--blue-ll);color:var(--blue-dk);
+  font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;
+  white-space:nowrap;
+}
+.tb-admin{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2)}
+.tb-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;
+}
+
+/* ── CONTENT ── */
+.content{padding:28px;flex:1;max-width:1400px}
+
+/* ── PAGES ── */
+.page{display:none}.page.on{display:block}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.4px;margin-bottom:4px}
+.sec-sub{font-size:13px;color:var(--ink3);margin-bottom:20px}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,240px));gap:14px;margin-bottom:24px}
+.kpi-card{background:var(--card);border-radius:12px;padding:18px 20px;border:1px solid var(--sep)}
+.kpi-label{font-size:12px;font-weight:500;color:var(--ink3);margin-bottom:8px;letter-spacing:.1px}
+.kpi-val{font-size:28px;font-weight:900;color:var(--ink);letter-spacing:-.5px;line-height:1}
+.kpi-sub{font-size:12px;color:var(--ink4);margin-top:4px}
+.kpi-card.blue .kpi-val{color:var(--blue)}
+.kpi-card.green .kpi-val{color:var(--green-dk)}
+.kpi-card.orange .kpi-val{color:var(--orange-dk)}
+
+/* ── TABLE CARD ── */
+.table-card{background:var(--card);border-radius:12px;border:1px solid var(--sep);overflow:hidden;margin-bottom:20px}
+.table-card-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--sep);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.tch-title{font-size:14px;font-weight:700;color:var(--ink)}
+.tch-actions{display:flex;gap:8px}
+table{width:100%;border-collapse:collapse}
+thead th{
+  font-size:11px;font-weight:600;color:var(--ink3);
+  padding:10px 16px;text-align:left;
+  background:var(--page);border-bottom:1px solid var(--sep);
+  letter-spacing:.3px;text-transform:uppercase;
+}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--sep);font-size:13px;color:var(--ink)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#FAFBFC}
+
+/* ── CHIP ── */
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap}
+.chip-blue{background:var(--blue-l);color:var(--blue-dk)}
+.chip-green{background:var(--green-l);color:var(--green-dk)}
+.chip-orange{background:var(--orange-l);color:var(--orange-dk)}
+.chip-red{background:var(--red-l);color:var(--red-dk)}
+.chip-gray{background:var(--ink5);color:var(--ink3)}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:600;letter-spacing:-.1px;
+  cursor:pointer;font-family:inherit;border:none;transition:opacity .15s;
+}
+.btn:active{opacity:.8}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-outline{background:var(--card);color:var(--ink2);border:1px solid var(--sep)}
+.btn-outline:hover{background:var(--page)}
+.btn-danger{background:var(--red-l);color:var(--red-dk);border:1px solid rgba(240,68,82,.2)}
+.btn-green{background:var(--green-l);color:var(--green-dk);border:1px solid rgba(5,192,114,.2)}
+.btn svg{width:14px;height:14px}
+
+/* ── FORM ELEMENTS ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.1px}
+.field input,.field select,.field textarea{
+  padding:9px 12px;border:1px solid var(--sep);border-radius:8px;
+  font-size:13px;color:var(--ink);background:var(--card);
+  font-family:inherit;outline:none;transition:border .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+.field textarea{resize:vertical;min-height:80px}
+
+/* ── MODAL ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.4);z-index:200;
+  align-items:center;justify-content:center;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--card);border-radius:16px;
+  width:520px;max-width:90vw;
+  overflow:hidden;
+}
+.modal-head{
+  padding:20px 24px;border-bottom:1px solid var(--sep);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-head-title{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.modal-close{
+  width:30px;height:30px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;cursor:pointer;color:var(--ink3);font-size:18px;
+}
+.modal-close:hover{background:var(--page)}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--sep);display:flex;justify-content:flex-end;gap:8px}
+
+/* ── ROOM TYPE CARD ── */
+.room-grid{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:20px;align-items:flex-start}
+.room-card{
+  background:var(--card);border-radius:12px;border:1px solid var(--sep);
+  padding:20px;position:relative;
+  display:flex;flex-direction:column;align-items:flex-start;gap:0;
+  width:220px;flex-shrink:0;
+}
+.room-card-name{
+  font-size:16px;font-weight:700;color:var(--ink);
+  letter-spacing:-.3px;margin-bottom:6px;
+  line-height:1.3;
+}
+.room-card-slots{
+  display:inline-flex;align-items:center;gap:5px;
+  align-self:flex-start;width:fit-content;white-space:nowrap;
+  font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;
+  background:var(--blue-ll);color:var(--blue-dk);
+  margin-bottom:10px;
+}
+.room-card-meta{
+  font-size:12px;color:var(--ink4);
+  margin-bottom:16px;line-height:1.5;
+}
+.room-card-actions{display:flex;gap:6px;margin-top:auto}
+.room-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  align-self:flex-start;width:fit-content;white-space:nowrap;
+  font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;
+  margin-bottom:10px;
+}
+.room-badge.possible{background:var(--green-l);color:var(--green-dk)}
+.room-badge.impossible{background:var(--red-l);color:var(--red-dk)}
+.room-badge-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* ── SCHEDULE TABLE ── */
+.schedule-wrap{background:var(--card);border-radius:12px;border:1px solid var(--sep);overflow:hidden}
+.schedule-header{padding:16px 20px;border-bottom:1px solid var(--sep);display:flex;align-items:center;justify-content:space-between}
+.sch-month{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.sch-nav{display:flex;gap:4px}
+.sch-nav button{
+  width:30px;height:30px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--page);border:1px solid var(--sep);
+  cursor:pointer;font-size:14px;color:var(--ink3);
+}
+.sch-nav button:hover{background:var(--ink5)}
+.schedule-list{padding:0}
+.sch-row{
+  display:flex;align-items:center;
+  padding:14px 20px;
+  border-bottom:1px solid var(--sep);
+  gap:16px;
+}
+.sch-row:last-child{border-bottom:none}
+.sch-date{width:100px;font-size:13px;font-weight:700;color:var(--ink);flex-shrink:0}
+.sch-day{font-size:12px;color:var(--ink3);font-weight:400}
+.sch-rooms{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+.sch-room-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--page);border:1px solid var(--sep);
+  border-radius:8px;padding:6px 10px;font-size:12px;
+}
+.sch-room-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sch-room-name{font-weight:600;color:var(--ink2)}
+.sch-room-cap{color:var(--ink3)}
+.sch-add{
+  background:none;border:1.5px dashed var(--ink4);border-radius:8px;
+  padding:6px 12px;font-size:12px;color:var(--ink3);
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.sch-add:hover{border-color:var(--blue);color:var(--blue)}
+.sch-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ── APPLICANT LIST ── */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.filter-chip{
+  padding:6px 14px;border-radius:20px;border:1px solid var(--sep);
+  background:var(--card);font-size:12px;font-weight:600;color:var(--ink3);
+  cursor:pointer;transition:all .15s;
+}
+.filter-chip:hover{border-color:var(--blue);color:var(--blue)}
+.filter-chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.search-input{
+  padding:7px 12px;border:1px solid var(--sep);border-radius:8px;
+  font-size:13px;color:var(--ink);background:var(--card);
+  font-family:inherit;outline:none;width:200px;margin-left:auto;
+}
+.search-input:focus{border-color:var(--blue)}
+
+/* ── LOTTERY PANEL ── */
+.lottery-table{background:var(--card);border-radius:12px;border:1px solid var(--sep);overflow:hidden;margin-bottom:20px;}
+.lottery-table-head{display:grid;grid-template-columns:1.8fr .8fr .8fr .8fr .8fr 1.4fr;background:var(--page);border-bottom:1px solid var(--sep);}
+.lottery-table-head span{font-size:11px;font-weight:600;color:var(--ink3);padding:10px 16px;letter-spacing:.3px;text-transform:uppercase;}
+.lottery-row{display:grid;grid-template-columns:1.8fr .8fr .8fr .8fr .8fr 1.4fr;align-items:center;border-bottom:1px solid var(--sep);transition:background .1s;}
+.lottery-row:last-child{border-bottom:none}
+.lottery-row:hover{background:#FAFBFC}
+.lottery-row>div{padding:14px 16px;font-size:13px;color:var(--ink);}
+.lp-actions{display:flex;gap:6px;}
+
+/* ── RESPONSIVE: 태블릿 (1024px ~ 1279px) ── */
+@media (min-width:1090px) and (max-width:1279px){
+  :root{--sidebar:180px}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(160px,1fr))}
+  .room-grid{gap:10px}
+  .room-card{width:190px}
+  .content{padding:20px}
+  .topbar{padding:0 20px}
+  .sidebar-logo{padding:20px 16px}
+  .nav-item{padding:9px 16px;font-size:12px}
+  .sec-title{font-size:16px}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .form-grid-3{grid-template-columns:1fr 1fr}
+}
+
+/* ── RESPONSIVE: PC (1280px+) ── */
+@media (min-width:1280px){
+  :root{--sidebar:220px}
+}
+
+/* ── SCHEDULE PAGINATION ── */
+.sch-nav-btn{
+  width:30px;height:30px;border-radius:6px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--page);border:1px solid var(--sep);
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--ink3);
+  font-family:inherit;transition:all .15s;
+}
+.sch-nav-btn:hover:not(:disabled){background:var(--ink5);color:var(--ink)}
+.sch-nav-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sch-nav-btn:disabled{opacity:.35;cursor:default}
+
+/* ── COLOR DOT ── */
+.color-dot{
+  display:block;width:22px;height:22px;border-radius:50%;
+  border:3px solid transparent;transition:all .15s;flex-shrink:0;
+}
+input[name="room-color"]:checked + .color-dot{
+  border-color:#191F28;
+  box-shadow:0 0 0 2px #fff inset;
+  transform:scale(1.15);
+}
+.color-dot:hover{transform:scale(1.1);}
+.color-dot.used{
+  background:#D1D6DB !important;
+  cursor:not-allowed;
+}
+.color-label-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.color-used-label{font-size:9px;color:var(--ink4);white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;text-align:center;}
+.color-used-label.active{color:var(--ink3);}
+
+/* ── LOGIN ── */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--page);
+}
+.login-box{
+  background:var(--card);border-radius:16px;border:1px solid var(--sep);
+  padding:40px;width:380px;
+}
+.login-logo{
+  font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;
+  color:var(--ink);letter-spacing:-.3px;margin-bottom:4px;text-align:center;
+}
+.login-logo span{color:var(--blue)}
+.login-sub{font-size:13px;color:var(--ink3);text-align:center;margin-bottom:28px}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.login-field input{
+  width:100%;padding:10px 14px;border:1px solid var(--sep);border-radius:8px;
+  font-size:14px;color:var(--ink);font-weight:400;background:var(--card);font-family:inherit;outline:none;
+}
+.login-field input:focus{border-color:var(--blue);font-weight:600;}
+.login-field input::placeholder{color:var(--ink4);font-weight:400;}
+.login-btn{
+  width:100%;padding:12px;background:var(--blue);color:#fff;border:none;
+  border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+  margin-top:6px;
+}
+.login-btn:active{opacity:.85}
+.login-error{font-size:12px;color:var(--red-dk);text-align:center;margin-top:10px;display:none}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-page">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-logo"><span>U</span>refresh</div>
+      <div class="login-sub">관리자 페이지</div>
+      <div class="login-field">
+        <label>아이디</label>
+        <input type="text" id="login-id" placeholder="admin">
+      </div>
+      <div class="login-field">
+        <label>비밀번호</label>
+        <input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <label for="keep-login" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer">
+        <input type="checkbox" id="keep-login" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+        <span style="font-size:13px;color:var(--ink3);user-select:none">로그인 상태 유지</span>
+      </label>
+      <button class="login-btn" onclick="doLogin()">로그인</button>
+      <div class="login-error" id="login-error">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard" style="display:none">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text"><span>U</span>refresh</div>
+      <div class="logo-sub">ADMIN DASHBOARD</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">메인</div>
+      <div class="nav-item on" onclick="goPage('pg-overview',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        대시보드
+      </div>
+      <div class="nav-section">신청 관리</div>
+      <div class="nav-item" onclick="goPage('pg-rooms',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        룸타입 설정
+      </div>
+      <div class="nav-item" onclick="goPage('pg-schedule',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        일정 관리
+      </div>
+      <div class="nav-item" onclick="goPage('pg-applicants',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        신청자 명단
+      </div>
+      <div class="nav-item" onclick="goPage('pg-lottery',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        추첨 관리
+      </div>
+      <div class="nav-section">설정</div>
+      <div class="nav-item" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        로그아웃
+      </div>
+    </nav>
+    <div class="sidebar-footer">관리자 · admin</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-title" id="topbar-title">대시보드</div>
+      <div class="tb-right">
+        <div class="tb-badge">2025년 8월 신청 진행중</div>
+        <div class="tb-admin">
+          <div class="tb-avatar">A</div>
+          admin
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ 대시보드 ══ -->
+      <div class="page on" id="pg-overview">
+        <div class="sec-title">대시보드</div>
+        <div class="sec-sub">2025년 8월 신청 현황을 한눈에 확인하세요.</div>
+        <div class="kpi-grid">
+          <div class="kpi-card blue">
+            <div class="kpi-label">전체 신청</div>
+            <div class="kpi-val">147</div>
+            <div class="kpi-sub">전월 대비 +12%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">전체 구좌</div>
+            <div class="kpi-val">40</div>
+            <div class="kpi-sub">4주 × 10구좌</div>
+          </div>
+          <div class="kpi-card orange">
+            <div class="kpi-label">평균 경쟁률</div>
+            <div class="kpi-val">3.7:1</div>
+            <div class="kpi-sub">최고 5.2:1</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">대기 인원</div>
+            <div class="kpi-val">107</div>
+            <div class="kpi-sub">승계 대기 중</div>
+          </div>
+        </div>
+        <div class="sec-title" style="font-size:15px;margin-bottom:12px">날짜별 신청 현황</div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>이용일</th><th>룸타입</th><th>최대 인원</th><th>신청인원</th><th>경쟁률</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>8월 4일 (월)</td><td>스탠다드룸</td><td>4명</td><td>12명</td><td>1.2:1</td><td><span class="chip chip-blue">경쟁 보통</span></td></tr>
+              <tr><td>8월 11일 (월)</td><td>패밀리룸</td><td>8명</td><td>24명</td><td>2.4:1</td><td><span class="chip chip-blue">경쟁 보통</span></td></tr>
+              <tr><td>8월 18일 (월)</td><td>스탠다드룸</td><td>4명</td><td>52명</td><td>5.2:1</td><td><span class="chip chip-red">경쟁 과열</span></td></tr>
+              <tr><td>8월 25일 (월)</td><td>디럭스룸</td><td>6명</td><td>31명</td><td>3.1:1</td><td><span class="chip chip-orange">경쟁 높음</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ 룸타입 설정 ══ -->
+      <div class="page" id="pg-rooms">
+        <div class="sec-title">룸타입 설정</div>
+        <div class="sec-sub">휴양소 룸타입을 등록하고 최대 인원을 설정하세요.</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <button class="btn btn-primary" onclick="openAddRoom()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            룸타입 추가
+          </button>
+          <div id="color-legend" style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink3)"></div>
+        </div>
+        <div class="room-grid" id="room-grid"></div>
+      </div>
+
+      <!-- ══ 일정 관리 ══ -->
+      <div class="page" id="pg-schedule">
+        <div class="sec-title">일정 관리</div>
+        <div class="sec-sub">날짜별 룸타입을 배정하고 신청 기간을 설정하세요.</div>
+        <div style="margin-bottom:16px">
+          <button class="btn btn-primary" onclick="openAddSchedule()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            날짜 추가
+          </button>
+        </div>
+        <div class="schedule-wrap">
+          <div class="schedule-list" id="schedule-list"></div>
+          <div id="schedule-pagination" style="display:none;padding:12px 20px;border-top:1px solid var(--sep);align-items:center;justify-content:center;gap:6px"></div>
+        </div>
+      </div>
+
+      <!-- ══ 신청자 명단 ══ -->
+      <div class="page" id="pg-applicants">
+        <div class="sec-title">신청자 명단</div>
+        <div class="sec-sub">전체 신청자를 조회하고 관리하세요.</div>
+        <div class="filter-bar">
+          <div class="filter-chip on" onclick="filterApplicants('all',this)">전체</div>
+          <div class="filter-chip" onclick="filterApplicants('selected',this)">당첨</div>
+          <div class="filter-chip" onclick="filterApplicants('waitlisted',this)">대기</div>
+          <div class="filter-chip" onclick="filterApplicants('cancelled',this)">취소</div>
+          <input class="search-input" placeholder="이름 또는 사번 검색" oninput="searchApplicants(this.value)">
+          <button class="btn btn-outline" onclick="exportExcel()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            엑셀 다운로드
+          </button>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>사번</th><th>성명</th><th>이용일</th><th>룸타입</th><th>동반가족</th><th>영아동반</th><th>유아동반</th><th>신청일시</th><th>상태</th><th style="text-align:center">대기순</th></tr></thead>
+            <tbody id="applicant-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ 추첨 관리 ══ -->
+      <div class="page" id="pg-lottery">
+        <div class="sec-title">추첨 관리</div>
+        <div class="sec-sub">신청 마감 후 날짜별로 추첨을 실행하세요.</div>
+        <div id="lottery-list"></div>
+      </div>
+
+    </div><!-- content -->
+  </div><!-- main -->
+</div><!-- layout -->
+</div><!-- dashboard -->
+
+<!-- ══ MODAL: 룸타입 추가 ══ -->
+<div class="modal-bg" id="modal-room">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title" id="modal-room-title">룸타입 추가</div>
+      <button class="modal-close" onclick="closeModal('modal-room')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>룸타입 이름</label><input type="text" id="room-name" placeholder="예: 스탠다드룸"></div>
+        <div class="field"><label>룸타입 색상구분</label>
+          <div id="color-picker-wrap" style="display:flex;gap:8px;margin-top:4px;flex-wrap:nowrap;align-items:flex-start"></div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>이용가능 인원 (최대)</label><input type="number" id="room-cap" placeholder="예: 4" min="1" max="20"></div>
+        <div class="field"><label>구좌 수</label><input type="number" id="room-slots" placeholder="예: 10" min="1"></div>
+      </div>
+      <div class="field" style="margin-bottom:16px">
+        <label>영유아 동반</label>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#333D4B">
+            <input type="radio" name="room-infant" id="room-infant-ok" value="possible" style="accent-color:#3182F6;width:16px;height:16px">
+            가능
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#333D4B">
+            <input type="radio" name="room-infant" id="room-infant-no" value="impossible" style="accent-color:#3182F6;width:16px;height:16px" checked>
+            불가
+          </label>
+        </div>
+      </div>
+      <div class="field"><label>비고</label><textarea id="room-note" placeholder="룸 설명 또는 특이사항"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-room')">취소</button>
+      <button class="btn btn-primary" id="modal-room-save-btn" onclick="addRoom()">추가하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: 일정 추가 ══ -->
+<div class="modal-bg" id="modal-schedule">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title" id="modal-sch-title">날짜별 룸타입 배정</div>
+      <button class="modal-close" onclick="closeModal('modal-schedule')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>이용일</label><input type="date" id="sch-date"></div>
+        <div class="field"><label>룸타입</label><select id="sch-room-type"></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>신청 시작일</label><input type="date" id="sch-start"></div>
+        <div class="field"><label>신청 마감일</label><input type="date" id="sch-end"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-schedule')">취소</button>
+      <button class="btn btn-primary" id="modal-sch-save-btn" onclick="addSchedule()">배정하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+var DEFAULT_ROOMS=[
+  {id:1,name:'스탠다드룸',cap:4,slots:10,color:'blue',infant:'impossible',note:''},
+  {id:2,name:'패밀리룸',cap:8,slots:5,color:'green',infant:'impossible',note:'넓은 거실 포함'},
+  {id:3,name:'디럭스룸',cap:6,slots:5,color:'orange',infant:'impossible',note:'오션뷰 제공'},
+];
+var DEFAULT_SCHEDULES=[
+  {date:'2025-08-04',day:'월',room:'스탠다드룸',cap:4,maxPeople:4,color:'blue',slots:10},
+  {date:'2025-08-11',day:'월',room:'패밀리룸',cap:8,maxPeople:8,color:'green',slots:5},
+  {date:'2025-08-18',day:'월',room:'스탠다드룸',cap:4,maxPeople:4,color:'blue',slots:10},
+  {date:'2025-08-25',day:'월',room:'디럭스룸',cap:6,maxPeople:6,color:'orange',slots:5},
+];
+var DEFAULT_APPLICANTS=[
+  {eno:'12345',name:'김민준',date:'8월 18일',room:'스탠다드룸',fam:2,infant:true,toddler:false,at:'07.29 09:12',status:'selected',rank:'—'},
+  {eno:'23456',name:'이서연',date:'8월 18일',room:'스탠다드룸',fam:1,infant:false,toddler:false,at:'07.29 09:45',status:'selected',rank:'—'},
+  {eno:'34567',name:'박지훈',date:'8월 18일',room:'스탠다드룸',fam:3,infant:false,toddler:true,at:'07.29 10:02',status:'waitlisted',rank:'1'},
+  {eno:'45678',name:'최수아',date:'8월 11일',room:'패밀리룸',fam:5,infant:true,toddler:true,at:'07.29 10:30',status:'selected',rank:'—'},
+  {eno:'56789',name:'정도윤',date:'8월 11일',room:'패밀리룸',fam:4,infant:false,toddler:true,at:'07.29 11:05',status:'waitlisted',rank:'2'},
+  {eno:'67890',name:'한예진',date:'8월 25일',room:'디럭스룸',fam:2,infant:false,toddler:false,at:'07.30 08:20',status:'cancelled',rank:'—'},
+  {eno:'78901',name:'오민서',date:'8월 4일',room:'스탠다드룸',fam:1,infant:false,toddler:false,at:'07.30 09:00',status:'selected',rank:'—'},
+];
+
+function loadData(){
+  try{ROOMS=JSON.parse(localStorage.getItem('ufresh_rooms'))||DEFAULT_ROOMS;}catch(e){ROOMS=DEFAULT_ROOMS;}
+  try{SCHEDULES=JSON.parse(localStorage.getItem('ufresh_schedules'))||DEFAULT_SCHEDULES;}catch(e){SCHEDULES=DEFAULT_SCHEDULES;}
+  try{APPLICANTS=JSON.parse(localStorage.getItem('ufresh_applicants'))||DEFAULT_APPLICANTS;}catch(e){APPLICANTS=DEFAULT_APPLICANTS;}
+}
+function saveRoomsData(){localStorage.setItem('ufresh_rooms',JSON.stringify(ROOMS));}
+function saveSchedulesData(){localStorage.setItem('ufresh_schedules',JSON.stringify(SCHEDULES));}
+function saveApplicantsData(){localStorage.setItem('ufresh_applicants',JSON.stringify(APPLICANTS));}
+
+var ROOMS=[];
+var SCHEDULES=[];
+var APPLICANTS=[];
+loadData();
+
+var curFilter='all';
+var editingRoomId=null;
+
+var COLOR_LIST=[
+  {value:'red',hex:'#F04452'},
+  {value:'orange',hex:'#FF6B00'},
+  {value:'yellow',hex:'#F5C500'},
+  {value:'green',hex:'#05C072'},
+  {value:'blue',hex:'#3182F6'},
+  {value:'navy',hex:'#3D4FE0'},
+  {value:'purple',hex:'#9B51E0'},
+];
+function renderColorPicker(currentRoomId){
+  var wrap=document.getElementById('color-picker-wrap');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  // 현재 수정중인 룸 제외하고 사용중인 색상 맵 생성
+  var usedMap={};
+  ROOMS.forEach(function(r){
+    if(r.id!==currentRoomId && r.color) usedMap[r.color]=r.name;
+  });
+  // 현재 룸의 색상 (수정시)
+  var currentColor='blue';
+  if(currentRoomId){
+    var cur=ROOMS.find(function(r){return r.id===currentRoomId;});
+    if(cur) currentColor=cur.color||'blue';
+  }
+  COLOR_LIST.forEach(function(c){
+    var isUsed=!!usedMap[c.value];
+    var wrapDiv=document.createElement('div');
+    wrapDiv.className='color-label-wrap';
+    var lbl=document.createElement('label');
+    lbl.style.cssText='cursor:'+(isUsed?'not-allowed':'pointer')+';position:relative';
+    var inp=document.createElement('input');
+    inp.type='radio';inp.name='room-color';inp.value=c.value;
+    inp.style.display='none';
+    if(c.value===currentColor) inp.checked=true;
+    if(isUsed) inp.disabled=true;
+    var dot=document.createElement('span');
+    dot.className='color-dot'+(isUsed?' used':'');
+    dot.style.background=isUsed?'#D1D6DB':c.hex;
+    lbl.appendChild(inp);lbl.appendChild(dot);
+    var nameEl=document.createElement('span');
+    nameEl.className='color-used-label'+(isUsed?'':' active');
+    nameEl.textContent=isUsed?usedMap[c.value]:'';
+    nameEl.title=isUsed?usedMap[c.value]:'';
+    wrapDiv.appendChild(lbl);
+    wrapDiv.appendChild(nameEl);
+    wrap.appendChild(wrapDiv);
+  });
+}
+
+var STATUS_MAP={
+  selected:'<span class="chip chip-blue">당첨</span>',
+  waitlisted:'<span class="chip chip-orange">대기</span>',
+  cancelled:'<span class="chip chip-red">취소</span>',
+  confirmed:'<span class="chip chip-green">확정</span>',
+};
+var COLOR_MAP={red:'#F04452',orange:'#FF6B00',yellow:'#F5C500',green:'#05C072',blue:'#3182F6',navy:'#3D4FE0',purple:'#9B51E0'};
+
+// ── LOGIN ──
+function doLogin(){
+  var id=document.getElementById('login-id').value;
+  var pw=document.getElementById('login-pw').value;
+  if(id==='admin'&&pw==='1234'){
+    var keep=document.getElementById('keep-login').checked;
+    if(keep){localStorage.setItem('ufresh_auth','1');}
+    else{sessionStorage.setItem('ufresh_auth','1');}
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    renderAll();
+  } else {
+    document.getElementById('login-error').style.display='block';
+  }
+}
+function doLogout(){
+  localStorage.removeItem('ufresh_auth');
+  sessionStorage.removeItem('ufresh_auth');
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('login-page').style.display='block';
+  document.getElementById('login-id').value='';
+  document.getElementById('login-pw').value='';
+}
+
+// ── NAV ──
+function goPage(id,el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('on')});
+  document.getElementById(id).classList.add('on');
+  el.classList.add('on');
+  var titles={'pg-overview':'대시보드','pg-rooms':'룸타입 설정','pg-schedule':'일정 관리','pg-applicants':'신청자 명단','pg-lottery':'추첨 관리'};
+  document.getElementById('topbar-title').textContent=titles[id]||'';
+}
+
+// ── MODAL ──
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+// ── ROOMS ──
+function renderRooms(){
+  var g=document.getElementById('room-grid');g.innerHTML='';
+  // 색상 범례 업데이트
+  var legend=document.getElementById('color-legend');
+  if(legend){
+    var colorNames={blue:'파랑',green:'초록',orange:'주황',red:'빨강'};
+    var used={};
+    ROOMS.forEach(function(r){
+      if(r.color){
+        if(!used[r.color])used[r.color]=[];
+        used[r.color].push(r.name);
+      }
+    });
+    var html='<span style="font-weight:600;color:var(--ink4)">색상 구분</span>';
+    Object.keys(used).forEach(function(c){
+      var hex=COLOR_MAP[c]||'#ccc';
+      html+='<span style="display:inline-flex;align-items:center;gap:5px">'+
+        '<span style="width:10px;height:10px;border-radius:50%;background:'+hex+';display:inline-block;flex-shrink:0"></span>'+
+        '<span style="color:var(--ink2)">'+used[c].join(', ')+'</span>'+
+      '</span>';
+    });
+    legend.innerHTML=html;
+  }
+  ROOMS.forEach(function(r){
+    var d=document.createElement('div');d.className='room-card';d.style.cssText='display:flex;flex-direction:column;align-items:flex-start;width:220px;flex-shrink:0;background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.08);padding:20px;position:relative';
+    var infantOk=r.infant==='possible';
+    var ibg=infantOk?'#E8FAF2':'#FFF0F1';
+    var itx=infantOk?'#027A48':'#7D1B16';
+    var idc=infantOk?'#05C072':'#F04452';
+    d.innerHTML='<div class="room-card-name">'+r.name+'</div>'+
+      '<div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:'+ibg+';color:'+itx+';margin-bottom:8px"><span style="width:6px;height:6px;border-radius:50%;background:'+idc+';display:inline-block;flex-shrink:0"></span>영유아 '+(infantOk?'가능':'불가')+'</div>'+
+      '<div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#EBF3FF;color:#1B64DA;margin-bottom:8px"><span style="width:6px;height:6px;border-radius:50%;background:#3182F6;display:inline-block;flex-shrink:0"></span>구좌 '+r.slots+'개</div>'+
+      '<div class="room-card-meta">최대 '+r.cap+'명'+(r.note?' · '+r.note:'')+'</div>'+
+      '<div class="room-card-actions">'+
+        '<button class="btn btn-outline" style="font-size:12px;padding:5px 10px" onclick="editRoom('+r.id+')">수정</button>'+
+        '<button class="btn btn-danger" style="font-size:12px;padding:5px 10px" onclick="deleteRoom('+r.id+')">삭제</button>'+
+      '</div>';
+    g.appendChild(d);
+  });
+  // 룸타입 select 동기화
+  var sel=document.getElementById('sch-room-type');
+  sel.innerHTML='';
+  ROOMS.forEach(function(r){
+    var o=document.createElement('option');o.value=r.name;o.textContent=r.name+' (최대 '+r.cap+'명)';sel.appendChild(o);
+  });
+}
+function addRoom(){
+  var name=document.getElementById('room-name').value.trim();
+  var cap=parseInt(document.getElementById('room-cap').value)||0;
+  var slots=parseInt(document.getElementById('room-slots').value)||0;
+  var colorEl=document.querySelector('input[name="room-color"]:checked');
+  var color=colorEl?colorEl.value:'blue';
+  var infant=document.querySelector('input[name="room-infant"]:checked');
+  var infantVal=infant?infant.value:'impossible';
+  var note=document.getElementById('room-note').value.trim();
+  if(!name||!cap||!slots){alert('이름, 최대 인원, 구좌 수를 입력해 주세요.');return;}
+  ROOMS.push({id:Date.now(),name:name,cap:cap,slots:slots,color:color,infant:infantVal,note:note});
+  saveRoomsData();
+  closeModal('modal-room');
+  renderRooms();
+}
+function openAddRoom(){
+  editingRoomId=null;
+  document.getElementById('modal-room-title').textContent='룸타입 추가';
+  document.getElementById('modal-room-save-btn').textContent='추가하기';
+  document.getElementById('modal-room-save-btn').onclick=addRoom;
+  document.getElementById('room-name').value='';
+  document.getElementById('room-slots').value='';
+  document.getElementById('room-cap').value='';
+  renderColorPicker(null);
+  document.getElementById('room-infant-no').checked=true;
+  document.getElementById('room-note').value='';
+  openModal('modal-room');
+}
+function editRoom(id){
+  var r=ROOMS.find(function(x){return x.id===id});
+  if(!r)return;
+  editingRoomId=id;
+  document.getElementById('modal-room-title').textContent='룸타입 수정';
+  document.getElementById('modal-room-save-btn').textContent='저장하기';
+  document.getElementById('modal-room-save-btn').onclick=saveRoom;
+  document.getElementById('room-name').value=r.name;
+  document.getElementById('room-slots').value=r.slots;
+  document.getElementById('room-cap').value=r.cap;
+  renderColorPicker(r.id);
+  if(r.infant==='possible'){document.getElementById('room-infant-ok').checked=true;}
+  else{document.getElementById('room-infant-no').checked=true;}
+  document.getElementById('room-note').value=r.note||'';
+  openModal('modal-room');
+}
+function saveRoom(){
+  var name=document.getElementById('room-name').value.trim();
+  var cap=parseInt(document.getElementById('room-cap').value)||0;
+  var slots=parseInt(document.getElementById('room-slots').value)||0;
+  var colorEl=document.querySelector('input[name="room-color"]:checked');
+  var color=colorEl?colorEl.value:'blue';
+  var infant=document.querySelector('input[name="room-infant"]:checked');
+  var infantVal=infant?infant.value:'impossible';
+  var note=document.getElementById('room-note').value.trim();
+  if(!name||!cap||!slots){alert('이름, 최대 인원, 구좌 수를 입력해 주세요.');return;}
+  var idx=ROOMS.findIndex(function(x){return x.id===editingRoomId});
+  if(idx===-1)return;
+  ROOMS[idx]=Object.assign({},ROOMS[idx],{name:name,cap:cap,slots:slots,color:color,infant:infantVal,note:note});
+  saveRoomsData();
+  closeModal('modal-room');
+  renderRooms();
+}
+function deleteRoom(id){
+  if(!confirm('삭제하시겠습니까?'))return;
+  ROOMS=ROOMS.filter(function(r){return r.id!==id});
+  saveRoomsData();
+  renderRooms();
+}
+
+// ── SCHEDULE ──
+var schPage=0;var SCH_PER_PAGE=10;
+function renderSchedule(){
+  var sl=document.getElementById('schedule-list');sl.innerHTML='';
+  var total=SCHEDULES.length;
+  var totalPages=Math.ceil(total/SCH_PER_PAGE);
+  if(schPage>=totalPages&&schPage>0)schPage=totalPages-1;
+  var start=schPage*SCH_PER_PAGE;
+  var pageItems=SCHEDULES.slice(start,start+SCH_PER_PAGE);
+
+  // 년도별 그룹핑
+  var yearGroups={};
+  pageItems.forEach(function(s,pi){
+    var year=s.date.split('-')[0];
+    if(!yearGroups[year])yearGroups[year]=[];
+    yearGroups[year].push({s:s,i:start+pi});
+  });
+
+  Object.keys(yearGroups).sort().forEach(function(year){
+    // 년도 헤더
+    var yearHeader=document.createElement('div');
+    yearHeader.style.cssText='padding:10px 20px 6px;font-size:12px;font-weight:700;color:var(--ink3);background:var(--page);border-bottom:1px solid var(--sep);letter-spacing:.3px;';
+    yearHeader.textContent=year+'년';
+    sl.appendChild(yearHeader);
+
+    yearGroups[year].forEach(function(item){
+      var s=item.s;var i=item.i;
+      var row=document.createElement('div');row.className='sch-row';
+      var c=COLOR_MAP[s.color]||'#3182F6';
+      var datePart=s.date.slice(5); // MM-DD
+      var month=datePart.split('-')[0]+'월';
+      var day=datePart.split('-')[1]+'일';
+      row.innerHTML=
+        '<div class="sch-date">'+month+' '+day+' <span class="sch-day">('+s.day+')</span></div>'+
+        '<div class="sch-rooms">'+
+          '<div class="sch-room-tag">'+
+            '<div class="sch-room-dot" style="background:'+c+'"></div>'+
+            '<span class="sch-room-name">'+s.room+'</span>'+
+            '<span class="sch-room-cap">최대 '+s.maxPeople+'명 · 구좌 '+s.slots+'개</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="sch-actions">'+
+          '<button class="btn btn-outline" style="font-size:12px;padding:5px 10px" onclick="editSchedule('+i+')">수정</button>'+
+          '<button class="btn btn-danger" style="font-size:12px;padding:5px 10px" onclick="deleteSchedule('+i+')">삭제</button>'+
+        '</div>';
+      sl.appendChild(row);
+    });
+  });
+
+  // 페이지네이션
+  var pg=document.getElementById('schedule-pagination');
+  if(totalPages<=1){pg.style.display='none';return;}
+  pg.style.display='flex';
+  pg.innerHTML='';
+  var prev=document.createElement('button');
+  prev.className='sch-nav-btn';
+  prev.innerHTML='&#8249;';
+  prev.disabled=schPage===0;
+  prev.onclick=function(){schPage--;renderSchedule();};
+  pg.appendChild(prev);
+  for(var p=0;p<totalPages;p++){
+    var btn=document.createElement('button');
+    btn.className='sch-nav-btn'+(p===schPage?' on':'');
+    btn.textContent=p+1;
+    btn.setAttribute('data-p',p);
+    btn.onclick=function(){schPage=parseInt(this.getAttribute('data-p'));renderSchedule();};
+    pg.appendChild(btn);
+  }
+  var next=document.createElement('button');
+  next.className='sch-nav-btn';
+  next.innerHTML='&#8250;';
+  next.disabled=schPage===totalPages-1;
+  next.onclick=function(){schPage++;renderSchedule();};
+  pg.appendChild(next);
+}
+var editingScheduleIdx=null;
+function openAddSchedule(){
+  editingScheduleIdx=null;
+  document.getElementById('modal-sch-title').textContent='날짜별 룸타입 배정';
+  document.getElementById('modal-sch-save-btn').textContent='배정하기';
+  document.getElementById('modal-sch-save-btn').onclick=addSchedule;
+  document.getElementById('sch-date').value='';
+  document.getElementById('sch-start').value='';
+  document.getElementById('sch-end').value='';
+  openModal('modal-schedule');
+}
+function editSchedule(i){
+  var s=SCHEDULES[i];
+  if(!s)return;
+  editingScheduleIdx=i;
+  document.getElementById('modal-sch-title').textContent='일정 수정';
+  document.getElementById('modal-sch-save-btn').textContent='저장하기';
+  document.getElementById('modal-sch-save-btn').onclick=saveSchedule;
+  document.getElementById('sch-date').value=s.date;
+  document.getElementById('sch-room-type').value=s.room;
+  document.getElementById('sch-start').value=s.start||'';
+  document.getElementById('sch-end').value=s.end||'';
+  openModal('modal-schedule');
+}
+function saveSchedule(){
+  var date=document.getElementById('sch-date').value;
+  var roomName=document.getElementById('sch-room-type').value;
+  if(!date||!roomName){alert('날짜와 룸타입을 선택해 주세요.');return;}
+  var room=ROOMS.find(function(r){return r.name===roomName});
+  var days=['일','월','화','수','목','금','토'];
+  var d=new Date(date);
+  SCHEDULES[editingScheduleIdx]=Object.assign({},SCHEDULES[editingScheduleIdx],{
+    date:date,day:days[d.getDay()],room:roomName,
+    cap:room?room.cap:0,
+    maxPeople:room?room.cap:4,
+    color:room?room.color:'blue',
+    slots:room?room.slots:0,
+    start:document.getElementById('sch-start').value,
+    end:document.getElementById('sch-end').value
+  });
+  SCHEDULES.sort(function(a,b){return a.date>b.date?1:-1});
+  saveSchedulesData();
+  closeModal('modal-schedule');
+  renderSchedule();
+}
+function addSchedule(){
+  var date=document.getElementById('sch-date').value;
+  var roomName=document.getElementById('sch-room-type').value;
+  if(!date||!roomName){alert('날짜와 룸타입을 선택해 주세요.');return;}
+  var room=ROOMS.find(function(r){return r.name===roomName});
+  var days=['일','월','화','수','목','금','토'];
+  var d=new Date(date);
+  SCHEDULES.push({
+    date:date,day:days[d.getDay()],room:roomName,
+    cap:room?room.cap:0,
+    maxPeople:room?room.cap:4,
+    color:room?room.color:'blue',
+    slots:room?room.slots:0
+  });
+  SCHEDULES.sort(function(a,b){return a.date>b.date?1:-1});
+  saveSchedulesData();
+  closeModal('modal-schedule');
+  renderSchedule();
+}
+function deleteSchedule(i){
+  if(!confirm('삭제하시겠습니까?'))return;
+  SCHEDULES.splice(i,1);saveSchedulesData();renderSchedule();
+}
+
+// ── APPLICANTS ──
+function renderApplicants(list){
+  var tb=document.getElementById('applicant-tbody');tb.innerHTML='';
+  list.forEach(function(a){
+    var tr=document.createElement('tr');
+    var infantBadge=a.infant?'<span class="chip chip-blue">영아</span>':'<span style="color:var(--ink4);font-size:12px">—</span>';
+    var toddlerBadge=a.toddler?'<span class="chip chip-green">유아</span>':'<span style="color:var(--ink4);font-size:12px">—</span>';
+    tr.innerHTML='<td style="font-family:monospace;font-size:12px">'+a.eno+'</td>'+
+      '<td style="font-weight:600">'+a.name+'</td>'+
+      '<td>'+a.date+'</td>'+
+      '<td>'+a.room+'</td>'+
+      '<td>'+a.fam+'명</td>'+
+      '<td>'+infantBadge+'</td>'+
+      '<td>'+toddlerBadge+'</td>'+
+      '<td style="color:var(--ink3)">'+a.at+'</td>'+
+      '<td>'+(STATUS_MAP[a.status]||a.status)+'</td>'+
+      '<td style="color:var(--ink3);text-align:center">'+a.rank+'</td>';
+    tb.appendChild(tr);
+  });
+}
+function filterApplicants(f,el){
+  curFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('on')});
+  el.classList.add('on');
+  var list=f==='all'?APPLICANTS:APPLICANTS.filter(function(a){return a.status===f});
+  renderApplicants(list);
+}
+function searchApplicants(q){
+  q=q.toLowerCase();
+  var list=APPLICANTS.filter(function(a){return a.name.includes(q)||a.eno.includes(q)});
+  renderApplicants(list);
+}
+function exportExcel(){alert('엑셀 다운로드 기능은 백엔드 연동 후 사용 가능합니다.')}
+
+// ── LOTTERY ──
+function renderLottery(){
+  var c=document.getElementById('lottery-list');c.innerHTML='';
+  if(!SCHEDULES.length){
+    c.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink4);font-size:13px;">등록된 일정이 없습니다.</div>';
+    return;
+  }
+  var wrap=document.createElement('div');wrap.className='lottery-table';
+  // 헤더
+  var head=document.createElement('div');head.className='lottery-table-head';
+  head.innerHTML=
+    '<span>이용일 · 룸타입</span>'+
+    '<span>총 신청</span>'+
+    '<span>당첨 구좌</span>'+
+    '<span>당첨자</span>'+
+    '<span>대기자</span>'+
+    '<span>관리</span>';
+  wrap.appendChild(head);
+  SCHEDULES.forEach(function(s){
+    var col=COLOR_MAP[s.color]||'#3182F6';
+    var datePart=s.date.slice(5);
+    var month=parseInt(datePart.split('-')[0])+'월';
+    var day=parseInt(datePart.split('-')[1])+'일';
+    var year=s.date.split('-')[0];
+    var row=document.createElement('div');row.className='lottery-row';
+    row.innerHTML=
+      '<div style="display:flex;align-items:center;gap:8px;">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></div>'+
+        '<div>'+
+          '<div style="font-weight:600;color:var(--ink)">'+month+' '+day+' ('+s.day+')</div>'+
+          '<div style="font-size:12px;color:var(--ink3);margin-top:1px">'+year+'년 · '+s.room+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="font-weight:700;color:var(--ink)">12</div>'+
+      '<div style="font-weight:700;color:var(--blue)">'+s.slots+'</div>'+
+      '<div style="font-weight:700;color:var(--green-dk)">0</div>'+
+      '<div style="font-weight:700;color:var(--orange-dk)">0</div>'+
+      '<div class="lp-actions">'+
+        '<button class="btn btn-primary" style="font-size:12px;padding:5px 12px" onclick="runLottery(this)">추첨 실행</button>'+
+        '<button class="btn btn-outline" style="font-size:12px;padding:5px 12px">결과 보기</button>'+
+        '<button class="btn btn-outline" style="font-size:12px;padding:5px 12px">SMS 발송</button>'+
+      '</div>';
+    wrap.appendChild(row);
+  });
+  c.appendChild(wrap);
+}
+function runLottery(btn){
+  if(!confirm('추첨을 실행하시겠습니까? 실행 후 되돌릴 수 없습니다.'))return;
+  btn.textContent='추첨 완료';
+  btn.className='btn btn-green';
+  btn.disabled=true;
+}
+
+function renderAll(){
+  loadData();
+  renderRooms();
+  renderSchedule();
+  renderApplicants(APPLICANTS);
+  renderLottery();
+}
+
+// ── AUTO LOGIN CHECK ──
+(function(){
+  if(localStorage.getItem('ufresh_auth')==='1'||sessionStorage.getItem('ufresh_auth')==='1'){
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    renderAll();
+  }
+})();
+</script>
+</body>
+</html>
