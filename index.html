@@ -378,14 +378,14 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
 
     <!-- 사번 조회 -->
     <div style="margin:16px 16px 0;">
-      <div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);display:flex;align-items:center;overflow:hidden;">
+      <div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);display:flex;align-items:center;overflow:hidden;width:100%;">
         <input id="my-eno-input" type="text" inputmode="numeric"
           placeholder="사번을 입력하세요"
-          style="flex:1;border:none;outline:none;padding:14px 16px;font-size:15px;font-family:inherit;color:var(--ink);background:transparent;"
+          style="min-width:0;flex:1;border:none;outline:none;padding:14px 16px;font-size:15px;font-family:inherit;color:var(--ink);background:transparent;"
           oninput="this.value=this.value.replace(/[^0-9]/g,'')"
           onkeydown="if(event.key==='Enter')searchMyApps()">
         <button onclick="searchMyApps()"
-          style="height:50px;padding:0 18px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">
+          style="width:64px;height:50px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">
           조회
         </button>
       </div>
