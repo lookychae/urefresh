@@ -427,7 +427,7 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
 
 <script>
 var WEEKDAYS_FULL  = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAcvN3uoIfyQMIUnfYKPk_lrZPBoKuXnVjESBgYANTvjFjXx6Oec-oX_OFti7JrUsvVQ/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyr-S8lROrLmQiR1gRvStW26nLddiqMIvbVENL_9oGRbm1ZEasz3Zp_Wq5CTFZ_bX3bvA/exec';
 
 // localStorage 헬퍼
 function lsGet(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
@@ -445,33 +445,41 @@ var selDate = null;
 // 캘린더 상태
 var calYear, calMonth;
 
-function loadSettings(){
-  settings = lsGet('urefresh_settings');
+function applySettings(s){
   var days = ['일','월','화','수','목','금','토'];
-
-  if(settings){
-    // 히어로 배너
-    if(settings.heroTitle) document.getElementById('hero-hl').textContent = settings.heroTitle;
-    if(settings.start){
-      var sd = new Date(settings.start);
-      document.getElementById('hero-start').textContent =
-        (sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+days[sd.getDay()]+')';
-      calYear = sd.getFullYear();
-      calMonth = sd.getMonth();
-    }
-    if(settings.end){
-      var ed = new Date(settings.end);
-      document.getElementById('hero-end').textContent =
-        (ed.getMonth()+1)+'월 '+ed.getDate()+'일 ('+days[ed.getDay()]+')';
-    }
+  if(!s) return;
+  settings = s;
+  lsSet('urefresh_settings', s);
+  if(s.heroTitle) document.getElementById('hero-hl').textContent = s.heroTitle;
+  if(s.start){
+    var sd = new Date(s.start);
+    document.getElementById('hero-start').textContent =
+      (sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+days[sd.getDay()]+')';
+    calYear = sd.getFullYear();
+    calMonth = sd.getMonth();
   }
-
-  if(!calYear){
-    var now = new Date();
-    calYear = now.getFullYear();
-    calMonth = now.getMonth();
+  if(s.end){
+    var ed = new Date(s.end);
+    document.getElementById('hero-end').textContent =
+      (ed.getMonth()+1)+'월 '+ed.getDate()+'일 ('+days[ed.getDay()]+')';
   }
+  if(!calYear){ var now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth(); }
   buildCalendar();
+}
+
+function loadSettings(){
+  // 로컬 캐시 먼저 적용 (빠른 렌더링)
+  var cached = lsGet('urefresh_settings');
+  if(cached){ applySettings(cached); }
+  else { var now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth(); buildCalendar(); }
+
+  // Sheets에서 최신 설정 불러오기
+  fetch(SCRIPT_URL+'?action=getSettings')
+    .then(function(r){ return r.json(); })
+    .then(function(s){
+      if(s && (s.start||s.end||s.heroTitle)) applySettings(s);
+    })
+    .catch(function(){});
 }
 
 // 캘린더 빌드
