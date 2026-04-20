@@ -678,7 +678,6 @@ function renderMyPage(){
 function searchMyApps(){
   var eno = (document.getElementById('my-eno-input').value||'').trim();
   var histEl = document.getElementById('hist-list');
-  var nameEl = document.getElementById('my-name-el');
   if(!eno){
     histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">사번을 입력하고 조회하세요</div>';
     return;
@@ -687,12 +686,6 @@ function searchMyApps(){
   var list = (lsGet('urefresh_my_apps')||[]).filter(function(a){return a.eno===eno;});
   lsSet('urefresh_last_eno', eno);
 
-  if(list.length){
-    var last = list[list.length-1];
-    if(nameEl) nameEl.textContent = (last.name||'방문자')+' 님';
-  } else {
-    if(nameEl) nameEl.textContent = '방문자 님';
-  }
 
   // Google Sheets에서도 조회
   histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">조회 중...</div>';
@@ -725,8 +718,7 @@ function searchMyApps(){
             id: 'sheet_'+i+'_'+(r['사번']||i)
           };
         });
-        if(sheetList.length && nameEl) nameEl.textContent=(sheetList[0].name||'방문자')+' 님';
-        renderHistList(sheetList);
+              renderHistList(sheetList);
       } else {
         renderHistList(list);
       }
