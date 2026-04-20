@@ -375,12 +375,23 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
     <div class="nav-title">내 신청</div><div class="nav-end"></div>
   </div>
   <div class="scroll">
-    <div class="my-hd">
-      <div class="my-hello">안녕하세요</div>
-      <div class="my-name" id="my-name-el">방문자 님</div>
+
+    <!-- 사번 조회 -->
+    <div style="margin:16px 16px 0;">
+      <div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);display:flex;align-items:center;overflow:hidden;">
+        <input id="my-eno-input" type="text" inputmode="numeric"
+          placeholder="사번을 입력하세요"
+          style="flex:1;border:none;outline:none;padding:14px 16px;font-size:15px;font-family:inherit;color:var(--ink);background:transparent;"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+          onkeydown="if(event.key==='Enter')searchMyApps()">
+        <button onclick="searchMyApps()"
+          style="height:50px;padding:0 18px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">
+          조회
+        </button>
+      </div>
     </div>
     <div style="padding:18px 20px 8px;font-size:15px;font-weight:700;color:var(--ink);">신청 내역</div>
-    <div class="hist-list" id="hist-list"><div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">신청 내역이 없습니다</div></div>
+    <div class="hist-list" id="hist-list"><div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">사번을 입력하고 조회하세요</div></div>
     <div style="height:8px"></div>
   </div>
   <div class="tab-wrap"><div class="tab-bar">
@@ -425,7 +436,7 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 // 신청 내역 로컬 저장
 function saveLocal(data){var list=lsGet('urefresh_my_apps')||[];list.push(data);lsSet('urefresh_my_apps',list);}
 function loadLocal(){return lsGet('urefresh_my_apps')||[];}
-function cancelLocal(id){var list=lsGet('urefresh_my_apps')||[];list=list.map(function(a){if(a.id===id)a.status='cancelled';return a;});lsSet('urefresh_my_apps',list);}
+function cancelLocal(id){var list=lsGet('urefresh_my_apps')||[];list=list.map(function(a){if(String(a.id)===String(id))a.status='cancelled';return a;});lsSet('urefresh_my_apps',list);}
 
 // 설정값
 var settings = null;
@@ -657,28 +668,143 @@ function doSubmit(){
 }
 
 function renderMyPage(){
-  var list=loadLocal();var histEl=document.getElementById('hist-list');
-  var nameEl=document.getElementById('my-name-el');
-  if(!list.length){if(nameEl)nameEl.textContent='방문자 님';histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">신청 내역이 없습니다</div>';return;}
-  var last=list[list.length-1];if(nameEl)nameEl.textContent=(last.name||'방문자')+' 님';
-  var CHIP={신청완료:'<span class="chip chip-blue">신청완료</span>',cancelled:'<span class="chip chip-gray">취소됨</span>',selected:'<span class="chip chip-blue">당첨</span>',waitlisted:'<span class="chip chip-orange">대기</span>',done:'<span class="chip chip-green">이용 완료</span>'};
-  histEl.innerHTML=list.slice().reverse().map(function(a,i){
-    var canCancel=a.status==='신청완료';
-    return '<div class="hist-item"><div class="hist-item-row">'+
-      '<div class="hist-num" style="background:var(--blue-ll);color:var(--blue-dk)">'+(list.length-i)+'</div>'+
-      '<div class="hist-body"><div class="hist-t">'+(a.dateLabel||a.date||'—')+'</div>'+
-      '<div class="hist-s">'+(a.fam||'—')+'<span class="hdot"></span>'+(a.at||'—')+' 접수</div></div>'+
-      (CHIP[a.status]||'<span class="chip chip-gray">'+a.status+'</span>')+
-      '</div><div class="hist-item-actions">'+
-      (canCancel?'<button class="hist-action-btn hist-btn-cancel" onclick="doCancelApp('+a.id+')">취소</button>':
-        '<button class="hist-action-btn hist-btn-disabled" disabled>취소 불가</button>')+
-      '</div></div>';
-  }).join('');
+  // 검색창 초기화
+  var input = document.getElementById('my-eno-input');
+  if(input) input.value = '';
+  var histEl = document.getElementById('hist-list');
+  if(histEl) histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">사번을 입력하고 조회하세요</div>';
 }
 
-function doCancelApp(id){
-  if(!confirm('신청을 취소하시겠습니까?'))return;
-  cancelLocal(id);renderMyPage();alert('취소되었습니다.');
+function searchMyApps(){
+  var eno = (document.getElementById('my-eno-input').value||'').trim();
+  var histEl = document.getElementById('hist-list');
+  var nameEl = document.getElementById('my-name-el');
+  if(!eno){
+    histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">사번을 입력하고 조회하세요</div>';
+    return;
+  }
+  // 로컬에서 먼저 조회
+  var list = (lsGet('urefresh_my_apps')||[]).filter(function(a){return a.eno===eno;});
+  lsSet('urefresh_last_eno', eno);
+
+  if(list.length){
+    var last = list[list.length-1];
+    if(nameEl) nameEl.textContent = (last.name||'방문자')+' 님';
+  } else {
+    if(nameEl) nameEl.textContent = '방문자 님';
+  }
+
+  // Google Sheets에서도 조회
+  histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">조회 중...</div>';
+  fetch(SCRIPT_URL+'?eno='+encodeURIComponent(eno))
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      if(rows && rows.length){
+        // 시트 데이터와 로컬 데이터 합치기 (중복 제거)
+        var sheetList = rows.map(function(r, i){
+          function fmtDate(v){
+            if(!v) return '';
+            if(String(v).indexOf('T')>-1){
+              var d=new Date(v);
+              return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일';
+            }
+            return String(v);
+          }
+          function fmtAt(v){
+            if(!v) return '';
+            if(String(v).indexOf('T')>-1){
+              var d=new Date(v);
+              return (d.getMonth()+1)+'.'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+            }
+            return String(v);
+          }
+          return {
+            eno: String(r['사번']||''), name: r['성명']||'',
+            dateLabel: fmtDate(r['이용일']), fam: r['동반가족수']||'',
+            at: fmtAt(r['신청일시']), status: r['상태']||'신청완료',
+            id: 'sheet_'+i+'_'+(r['사번']||i)
+          };
+        });
+        if(sheetList.length && nameEl) nameEl.textContent=(sheetList[0].name||'방문자')+' 님';
+        renderHistList(sheetList);
+      } else {
+        renderHistList(list);
+      }
+    })
+    .catch(function(){
+      renderHistList(list);
+    });
+}
+
+var _histList = [];
+
+function renderHistList(list){
+  _histList = list.slice();
+  var histEl = document.getElementById('hist-list');
+  if(!list.length){
+    histEl.innerHTML='<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">신청 내역이 없습니다</div>';
+    return;
+  }
+  histEl.innerHTML = '';
+  var CHIP = {
+    '신청완료':'<span class="chip chip-blue">신청완료</span>',
+    'cancelled':'<span class="chip chip-gray">취소됨</span>',
+    'selected':'<span class="chip chip-blue">당첨</span>',
+    'waitlisted':'<span class="chip chip-orange">대기</span>',
+    'done':'<span class="chip chip-green">이용 완료</span>'
+  };
+  list.slice().reverse().forEach(function(a, i){
+    var realIdx = list.length - 1 - i;
+    var canCancel = a.status === '신청완료';
+    var chip = CHIP[a.status] || '<span class="chip chip-gray">'+a.status+'</span>';
+    var div = document.createElement('div');
+    div.className = 'hist-item';
+    div.innerHTML =
+      '<div class="hist-item-row">'+
+        '<div class="hist-num" style="background:var(--blue-ll);color:var(--blue-dk)">'+(list.length-i)+'</div>'+
+        '<div class="hist-body">'+
+          '<div class="hist-t">'+(a.dateLabel||a.date||'—')+'</div>'+
+          '<div class="hist-s">'+(a.fam||'—')+'<span class="hdot"></span>'+(a.at||'—')+' 접수</div>'+
+        '</div>'+
+        chip+
+      '</div>'+
+      '<div class="hist-item-actions"></div>';
+    var actions = div.querySelector('.hist-item-actions');
+    if(canCancel){
+      var btn = document.createElement('button');
+      btn.className = 'hist-action-btn hist-btn-cancel';
+      btn.textContent = '취소';
+      (function(idx){ btn.addEventListener('click', function(){ doCancelApp(idx); }); })(realIdx);
+      actions.appendChild(btn);
+    } else {
+      var btn = document.createElement('button');
+      var statusText = a.status === 'cancelled' ? '취소 완료' : '취소 불가';
+      btn.className = 'hist-action-btn hist-btn-disabled';
+      btn.textContent = statusText;
+      btn.disabled = true;
+      actions.appendChild(btn);
+    }
+    histEl.appendChild(div);
+  });
+}
+
+function doCancelApp(idx){
+  if(!confirm('신청을 취소하시겠습니까?')) return;
+  var item = _histList[idx];
+  if(!item){ alert('오류가 발생했습니다.'); return; }
+  var list = lsGet('urefresh_my_apps') || [];
+  var updated = false;
+  list = list.map(function(a){
+    if(String(a.id) === String(item.id) || (a.eno === item.eno && a.at === item.at)){
+      a.status = 'cancelled';
+      updated = true;
+    }
+    return a;
+  });
+  if(!updated){ item.status = 'cancelled'; list.push(item); }
+  lsSet('urefresh_my_apps', list);
+  _histList[idx].status = 'cancelled';
+  renderHistList(_histList);
 }
 
 loadSettings();
