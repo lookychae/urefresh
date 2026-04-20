@@ -399,8 +399,15 @@ function go(id){
 }
 
 (function(){
-  var end=new Date('2025-08-05T18:00:00').getTime();
+  function getEndTime(){
+    try{
+      var s=JSON.parse(localStorage.getItem('urefresh_settings'));
+      if(s&&s.end) return new Date(s.end).getTime();
+    }catch(e){}
+    return new Date('2099-12-31T23:59:59').getTime();
+  }
   function tick(){
+    var end=getEndTime();
     var diff=Math.max(0,end-Date.now());
     var d=Math.floor(diff/86400000);var h=Math.floor(diff%86400000/3600000);
     var m=Math.floor(diff%3600000/60000);var s=Math.floor(diff%60000/1000);
@@ -408,6 +415,27 @@ function go(id){
     if(el)el.textContent=diff>0?d+'일 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):'마감되었습니다';
   }
   tick();setInterval(tick,1000);
+  // 히어로 배너 텍스트도 설정값으로 업데이트
+  try{
+    var s=JSON.parse(localStorage.getItem('urefresh_settings'));
+    if(s){
+      if(s.heroTitle){
+        var hl=document.querySelector('.hero-title .hl');
+        if(hl&&s.heroTitle) hl.parentElement.childNodes[0].textContent='';
+        var heroTitleEl=document.querySelector('.hero-title');
+        if(heroTitleEl&&s.heroTitle) heroTitleEl.innerHTML='<span class="hl">'+s.heroTitle+'</span>';
+      }
+      if(s.end){
+        var endDate=new Date(s.end);
+        var mo=(endDate.getMonth()+1);var d=endDate.getDate();
+        var h=endDate.getHours();var mi=String(endDate.getMinutes()).padStart(2,'0');
+        var days=['일','월','화','수','목','금','토'];
+        var dayStr=days[endDate.getDay()];
+        var deadlineEl=document.querySelector('.hero-deadline');
+        if(deadlineEl) deadlineEl.textContent='신청 마감 '+String(mo).padStart(2,'0')+'.'+String(d).padStart(2,'0')+'('+dayStr+') '+h+':'+mi+'까지';
+      }
+    }
+  }catch(e){}
 })();
 
 function checkForm(){
