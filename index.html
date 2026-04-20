@@ -427,7 +427,7 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
 
 <script>
 var WEEKDAYS_FULL  = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqQ79K_I_2UjMkoQGHcl6Fv2h4yrJuDHfUnD82fs4ivuYP154i-Yqpm6F524RsZDAsTQ/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAcvN3uoIfyQMIUnfYKPk_lrZPBoKuXnVjESBgYANTvjFjXx6Oec-oX_OFti7JrUsvVQ/exec';
 
 // localStorage 헬퍼
 function lsGet(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
@@ -756,7 +756,7 @@ function renderHistList(list){
         '<div class="hist-num" style="background:var(--blue-ll);color:var(--blue-dk)">'+(list.length-i)+'</div>'+
         '<div class="hist-body">'+
           '<div class="hist-t">'+(a.dateLabel||a.date||'—')+'</div>'+
-          '<div class="hist-s">'+(a.fam||'—')+'<span class="hdot"></span>'+(a.at||'—')+' 접수</div>'+
+          '<div class="hist-s">'+(a.fam?a.fam+'<span class="hdot"></span>':'')+(a.at||'—')+' 접수</div>'+
         '</div>'+
         chip+
       '</div>'+
@@ -784,19 +784,26 @@ function doCancelApp(idx){
   if(!confirm('신청을 취소하시겠습니까?')) return;
   var item = _histList[idx];
   if(!item){ alert('오류가 발생했습니다.'); return; }
+
+  // 로컬 취소
   var list = lsGet('urefresh_my_apps') || [];
   var updated = false;
   list = list.map(function(a){
-    if(String(a.id) === String(item.id) || (a.eno === item.eno && a.at === item.at)){
-      a.status = 'cancelled';
-      updated = true;
+    if(String(a.id)===String(item.id)||(a.eno===item.eno&&a.at===item.at)){
+      a.status='cancelled'; updated=true;
     }
     return a;
   });
-  if(!updated){ item.status = 'cancelled'; list.push(item); }
+  if(!updated){ item.status='cancelled'; list.push(item); }
   lsSet('urefresh_my_apps', list);
   _histList[idx].status = 'cancelled';
   renderHistList(_histList);
+
+  // Google Sheets 취소 반영
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action:'cancel', eno: item.eno, at: item.at })
+  }).catch(function(){});
 }
 
 loadSettings();
