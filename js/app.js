@@ -9,6 +9,7 @@ var settings = null;
 var selDate  = null;
 var calYear, calMonth;
 var _histList = [];
+var NOTICES = [];
 
 // ══════════════════════════════════════════════════════════
 // 설정 로드 & 적용
@@ -164,7 +165,8 @@ function selectDate(dateStr, rate){
 function go(id){
   document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
   document.getElementById(id).classList.add('on');
-  if(id === 'sc-my') renderMyPage();
+  if(id === 'sc-my')     renderMyPage();
+  if(id === 'sc-notice') loadNotices();
 }
 
 function goDetail(){
@@ -438,6 +440,91 @@ function doCancelApp(idx){
 }
 
 // ══════════════════════════════════════════════════════════
+// 공지사항 (목록 + 상세)
+// ══════════════════════════════════════════════════════════
+function loadNotices(){
+  // 로컬 캐시 먼저 렌더 (빠른 표시)
+  var cached = lsGet('urefresh_notices');
+  if(Array.isArray(cached) && cached.length){
+    NOTICES = cached;
+    renderNoticeList();
+  }
+
+  apiGetNotices()
+    .then(function(rows){
+      if(!Array.isArray(rows)) return;
+      NOTICES = rows.map(function(r){
+        return {
+          id:        String(r.id || ''),
+          title:     r.title || '',
+          content:   r.content || '',
+          author:    r.author || '',
+          createdAt: r.createdAt || ''
+        };
+      });
+      lsSet('urefresh_notices', NOTICES);
+      renderNoticeList();
+    })
+    .catch(function(err){
+      console.warn('[loadNotices] failed', err);
+      if(!NOTICES.length) renderNoticeList(); // 빈 상태 표시
+    });
+}
+
+function _fmtNoticeDate(iso){
+  if(!iso) return '';
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return String(iso);
+  return d.getFullYear() + '.' +
+    String(d.getMonth() + 1).padStart(2, '0') + '.' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function renderNoticeList(){
+  var el = document.getElementById('notice-list');
+  if(!el) return;
+  if(!NOTICES.length){
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">등록된 공지사항이 없습니다</div>';
+    return;
+  }
+  // 최신순 정렬
+  var sorted = NOTICES.slice().sort(function(a, b){
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+
+  el.innerHTML = '';
+  sorted.forEach(function(n, i){
+    var row = document.createElement('div');
+    row.className = 'ni-row';
+    if(i === sorted.length - 1) row.style.borderBottom = 'none';
+    var title  = (n.title  || '').replace(/</g, '&lt;');
+    var author = (n.author || '').replace(/</g, '&lt;');
+    row.innerHTML =
+      '<div class="ni-ico"><svg width="17" height="17" stroke="#3182F6"><use href="#i-doc"/></svg></div>' +
+      '<div class="ni-body">' +
+        '<div class="ni-t">' + title + '</div>' +
+        '<div class="ni-d">' + _fmtNoticeDate(n.createdAt) + (author ? ' · ' + author : '') + '</div>' +
+      '</div>' +
+      '<svg width="18" height="18" stroke="#B0B8C1"><use href="#i-fwd"/></svg>';
+    (function(id){
+      row.addEventListener('click', function(){ openNoticeDetail(id); });
+    })(n.id);
+    el.appendChild(row);
+  });
+}
+
+function openNoticeDetail(id){
+  var n = NOTICES.find(function(x){ return String(x.id) === String(id); });
+  if(!n) return;
+  document.getElementById('nd-title').textContent = n.title || '';
+  var meta = _fmtNoticeDate(n.createdAt) + (n.author ? ' · ' + n.author : '');
+  document.getElementById('nd-meta').textContent  = meta;
+  document.getElementById('nd-body').textContent  = n.content || '';
+  go('sc-notice-detail');
+}
+
+// ══════════════════════════════════════════════════════════
 // 초기화
 // ══════════════════════════════════════════════════════════
 loadSettings();
+loadNotices();

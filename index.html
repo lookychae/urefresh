@@ -214,7 +214,7 @@
   </div></div>
 </div>
 
-<!-- ══ SCREEN: NOTICE ══ -->
+<!-- ══ SCREEN: NOTICE LIST ══ -->
 <div class="scr" id="sc-notice">
   <div class="nav">
     <button class="btn-back" onclick="go('sc-home')"><svg width="24" height="24" stroke="#191F28"><use href="#i-back"/></svg></button>
@@ -222,10 +222,8 @@
   </div>
   <div class="scroll">
     <div style="padding:18px 20px 8px;font-size:15px;font-weight:700;color:var(--ink);">최근 공지</div>
-    <div class="notice-card">
-      <div class="ni-row"><div class="ni-ico"><svg width="17" height="17" stroke="#3182F6"><use href="#i-doc"/></svg></div><div class="ni-body"><div class="ni-t">2025년 8월 추첨 일정 안내</div><div class="ni-d">2025.07.25 · 총무팀</div></div><svg width="18" height="18" stroke="#B0B8C1"><use href="#i-fwd"/></svg></div>
-      <div class="ni-row"><div class="ni-ico"><svg width="17" height="17" stroke="#3182F6"><use href="#i-doc"/></svg></div><div class="ni-body"><div class="ni-t">8월 시설 점검 안내 (8/10 하루)</div><div class="ni-d">2025.07.20 · 총무팀</div></div><svg width="18" height="18" stroke="#B0B8C1"><use href="#i-fwd"/></svg></div>
-      <div class="ni-row" style="border-bottom:none"><div class="ni-ico"><svg width="17" height="17" stroke="#3182F6"><use href="#i-doc"/></svg></div><div class="ni-body"><div class="ni-t">이용 수칙 개정 안내 (2025 버전)</div><div class="ni-d">2025.06.30 · 총무팀</div></div><svg width="18" height="18" stroke="#B0B8C1"><use href="#i-fwd"/></svg></div>
+    <div class="notice-card" id="notice-list">
+      <div style="text-align:center;padding:32px;color:var(--ink4);font-size:14px">공지사항을 불러오는 중...</div>
     </div>
     <div style="height:8px"></div>
   </div>
@@ -234,6 +232,22 @@
     <button class="tb" onclick="go('sc-my')"><div class="tb-ico"><svg width="22" height="22" stroke="#D1D5DB"><use href="#i-person"/></svg></div><div class="tb-lbl">내 신청</div></button>
     <button class="tb on"><div class="tb-ico"><svg width="22" height="22" stroke="#fff"><use href="#i-bell"/></svg></div><div class="tb-lbl">공지</div></button>
   </div></div>
+</div>
+
+<!-- ══ SCREEN: NOTICE DETAIL ══ -->
+<div class="scr" id="sc-notice-detail">
+  <div class="nav">
+    <button class="btn-back" onclick="go('sc-notice')"><svg width="24" height="24" stroke="#191F28"><use href="#i-back"/></svg></button>
+    <div class="nav-title">공지사항</div><div class="nav-end"></div>
+  </div>
+  <div class="scroll">
+    <div class="nd-wrap">
+      <div class="nd-title" id="nd-title">—</div>
+      <div class="nd-meta" id="nd-meta">—</div>
+      <div class="nd-body" id="nd-body">—</div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
 </div>
 
 </div>
