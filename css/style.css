@@ -117,6 +117,18 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
 .custom-sel{flex:1;display:flex;align-items:center;justify-content:space-between;padding-left:8px;cursor:pointer;}
 .custom-sel-val{font-size:15px;color:var(--ink);}
 .sel-arrow{flex-shrink:0;transition:transform .2s}
+
+/* EMAIL (local@domain + dropdown) */
+.email-grid{display:flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap;}
+.email-grid .fi{flex:1;min-width:60px;padding:0;}
+.email-at{color:var(--ink3);font-size:14px;flex-shrink:0;font-weight:500;}
+.email-select{
+  border:1px solid var(--sep);border-radius:8px;padding:6px 8px;
+  font-size:12px;color:var(--ink2);background:var(--card);font-family:inherit;
+  flex-shrink:0;cursor:pointer;outline:none;min-width:94px;height:30px;
+}
+.email-select:focus{border-color:var(--blue);}
+.fi[readonly]{background:var(--ink5);color:var(--ink3);cursor:default;}
 .dp-panel{display:none;background:var(--card);border:1px solid var(--sep);border-top:none;border-radius:0 0 var(--radius) var(--radius);margin:0 16px;overflow:hidden;}
 .dp-panel.open{display:block}
 .dp-item{padding:14px 16px;font-size:15px;color:var(--ink);border-bottom:1px solid var(--sep);cursor:pointer;display:flex;align-items:center;justify-content:space-between;}

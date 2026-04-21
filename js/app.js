@@ -177,9 +177,15 @@ function goDetail(){
   document.getElementById('dh-slots').innerHTML   = selDate.slots + '<span class="dhs-unit">구좌</span>';
   document.getElementById('dh-rate').innerHTML    = selDate.rate.toFixed(1) + '<span class="dhs-unit">:1</span>';
 
-  ['f-eno','f-nm','f-tel','f-email'].forEach(function(id){
+  ['f-eno','f-nm','f-tel','f-email-local','f-email-domain'].forEach(function(id){
     document.getElementById(id).value = '';
   });
+  // 이메일 도메인 선택 초기화 (직접 입력 모드)
+  var emailSel = document.getElementById('f-email-select');
+  emailSel.value = '';
+  var emailDomain = document.getElementById('f-email-domain');
+  emailDomain.readOnly = false;
+  emailDomain.style.background = '';
   document.getElementById('sel-val').textContent = '본인 포함 1명';
   var box = document.getElementById('chk-infant');
   box.classList.remove('on');
@@ -222,16 +228,42 @@ function isValidEmail(v){
   return EMAIL_RE.test((v || '').trim());
 }
 
-function checkForm(){
-  var emailInput = document.getElementById('f-email');
-  var emailVal   = (emailInput.value || '').trim();
-  var emailOk    = isValidEmail(emailVal);
-
-  // 이메일 시각적 피드백 (입력값 있는데 형식 틀릴 때만 빨갛게)
-  if(emailVal && !emailOk){
-    emailInput.style.color = 'var(--red-dk)';
+// 드롭다운에서 도메인 선택 시 도메인 input 자동 채움 + readonly 처리
+function handleEmailDomain(sel){
+  var domain = document.getElementById('f-email-domain');
+  if(sel.value){
+    domain.value = sel.value;
+    domain.readOnly = true;
   } else {
-    emailInput.style.color = '';
+    domain.value = '';
+    domain.readOnly = false;
+    domain.focus();
+  }
+  checkForm();
+}
+
+// 현재 폼에서 조합된 이메일 주소 반환
+function getEmailValue(){
+  var local  = (document.getElementById('f-email-local').value  || '').trim();
+  var domain = (document.getElementById('f-email-domain').value || '').trim();
+  if(!local || !domain) return '';
+  return local + '@' + domain;
+}
+
+function checkForm(){
+  var localInput  = document.getElementById('f-email-local');
+  var domainInput = document.getElementById('f-email-domain');
+  var email   = getEmailValue();
+  var emailOk = isValidEmail(email);
+
+  // 시각적 피드백: 뭔가 입력했는데 아직 유효하지 않을 때만 빨갛게
+  var dirty = (localInput.value || domainInput.value);
+  if(dirty && !emailOk){
+    localInput.style.color  = 'var(--red-dk)';
+    domainInput.style.color = 'var(--red-dk)';
+  } else {
+    localInput.style.color  = '';
+    domainInput.style.color = '';
   }
 
   var ok = (document.getElementById('f-eno').value || '').trim() &&
@@ -286,14 +318,14 @@ function doSubmit(){
   var e     = (document.getElementById('f-eno').value   || '').trim();
   var nm    = (document.getElementById('f-nm').value    || '').trim();
   var tel   = (document.getElementById('f-tel').value   || '').trim();
-  var email = (document.getElementById('f-email').value || '').trim();
+  var email = getEmailValue();
   var fam    = document.getElementById('sel-val').textContent;
   var infant = document.getElementById('chk-infant').classList.contains('on');
 
   // 이메일 형식 최종 검증 (버튼 상태와 무관하게 이중 체크)
   if(!isValidEmail(email)){
     alert('이메일 형식이 올바르지 않습니다.\n소문자와 숫자만 사용해주세요. 예: user@company.com');
-    document.getElementById('f-email').focus();
+    document.getElementById('f-email-local').focus();
     return;
   }
 
