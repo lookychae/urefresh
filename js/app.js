@@ -184,6 +184,9 @@ function goDetail(){
   var box = document.getElementById('chk-infant');
   box.classList.remove('on');
   box.querySelector('svg').style.display = 'none';
+  // 제출 버튼 상태 초기화 (이전 제출 후 남은 "제출 중..." 텍스트 복원)
+  var submitBtn = document.getElementById('submit-btn');
+  submitBtn.textContent = '신청 완료하기';
   checkForm();
   go('sc-detail');
 }
@@ -212,11 +215,29 @@ function goDetail(){
 // ══════════════════════════════════════════════════════════
 // 폼 입력/검증
 // ══════════════════════════════════════════════════════════
+// 이메일 형식: 소문자/숫자@도메인.tld
+var EMAIL_RE = /^[a-z0-9]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+function isValidEmail(v){
+  return EMAIL_RE.test((v || '').trim());
+}
+
 function checkForm(){
+  var emailInput = document.getElementById('f-email');
+  var emailVal   = (emailInput.value || '').trim();
+  var emailOk    = isValidEmail(emailVal);
+
+  // 이메일 시각적 피드백 (입력값 있는데 형식 틀릴 때만 빨갛게)
+  if(emailVal && !emailOk){
+    emailInput.style.color = 'var(--red-dk)';
+  } else {
+    emailInput.style.color = '';
+  }
+
   var ok = (document.getElementById('f-eno').value || '').trim() &&
            (document.getElementById('f-nm').value  || '').trim() &&
            (document.getElementById('f-tel').value || '').trim().length >= 12 &&
-           (document.getElementById('f-email').value || '').trim();
+           emailOk;
   var btn = document.getElementById('submit-btn');
   btn.disabled = !ok;
   btn.style.opacity = ok ? '1' : '.4';
@@ -268,6 +289,13 @@ function doSubmit(){
   var email = (document.getElementById('f-email').value || '').trim();
   var fam    = document.getElementById('sel-val').textContent;
   var infant = document.getElementById('chk-infant').classList.contains('on');
+
+  // 이메일 형식 최종 검증 (버튼 상태와 무관하게 이중 체크)
+  if(!isValidEmail(email)){
+    alert('이메일 형식이 올바르지 않습니다.\n소문자와 숫자만 사용해주세요. 예: user@company.com');
+    document.getElementById('f-email').focus();
+    return;
+  }
 
   var btn = document.getElementById('submit-btn');
   btn.disabled = true;
