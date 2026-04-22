@@ -235,6 +235,8 @@ function loadApplicants(){
     });
 }
 
+var _schedulesFirstLoad = true;
+
 function loadSchedules(){
   apiGetSchedules()
     .then(function(rows){
@@ -253,6 +255,20 @@ function loadSchedules(){
           };
         });
       }
+
+      // 최초 로드 시 가장 이른 이용일이 있는 월로 캘린더 이동
+      if(_schedulesFirstLoad && SCHEDULES_CACHE.length > 0 && !selDate){
+        var earliest = SCHEDULES_CACHE.slice()
+          .filter(function(s){ return s.date; })
+          .sort(function(a, b){ return a.date < b.date ? -1 : 1; })[0];
+        if(earliest && earliest.date){
+          var parts = earliest.date.split('-');
+          calYear  = parseInt(parts[0]);
+          calMonth = parseInt(parts[1]) - 1;
+        }
+        _schedulesFirstLoad = false;
+      }
+
       // 캘린더에 이용일 반영
       buildCalendar();
       if(selDate && selDate.isoDate){
