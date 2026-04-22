@@ -134,7 +134,7 @@ function selectDate(dateStr){
 
   // 실제 데이터 기반 집계 (취소 제외)
   var apply = countAppsByDate_(label);
-  var slots = getSlotsForDate_(label);
+  var slots = getSlotsForDate_(dateStr);
   var rate  = slots > 0 ? (apply / slots) : 0;
 
   selDate = {
@@ -161,21 +161,34 @@ function selectDate(dateStr){
   buildCalendar();
 }
 
-// 신청 내역 캐시 + 집계 헬퍼
+// 신청 내역 / 일정 캐시 + 집계 헬퍼
 var APPLICANTS_CACHE = [];
+var SCHEDULES_CACHE  = [];
 var DEFAULT_SLOTS = 10;
 
 function loadApplicants(){
   apiGetAllApps()
     .then(function(rows){
       APPLICANTS_CACHE = Array.isArray(rows) ? rows : [];
-      // 선택된 날짜가 있으면 집계값 갱신
       if(selDate && selDate.isoDate){
         selectDate(selDate.isoDate);
       }
     })
     .catch(function(err){
       console.warn('[loadApplicants] failed', err);
+    });
+}
+
+function loadSchedules(){
+  apiGetSchedules()
+    .then(function(rows){
+      SCHEDULES_CACHE = Array.isArray(rows) ? rows : [];
+      if(selDate && selDate.isoDate){
+        selectDate(selDate.isoDate);
+      }
+    })
+    .catch(function(err){
+      console.warn('[loadSchedules] failed', err);
     });
 }
 
@@ -200,9 +213,14 @@ function countAppsByDate_(label){
   }).length;
 }
 
-// 날짜별 배정 구좌 수 (추후 시트 연동 여지 있음, 현재는 기본값)
-function getSlotsForDate_(label){
-  return DEFAULT_SLOTS;
+// 날짜별 배정 구좌 수 (관리자가 일정관리에서 설정한 값)
+function getSlotsForDate_(isoDate){
+  for(var i = 0; i < SCHEDULES_CACHE.length; i++){
+    if(SCHEDULES_CACHE[i].date === isoDate){
+      return Number(SCHEDULES_CACHE[i].slots) || 0;
+    }
+  }
+  return 0; // 일정에 없는 날짜면 0
 }
 
 // ══════════════════════════════════════════════════════════
@@ -614,3 +632,4 @@ function openNoticeDetail(id){
 loadSettings();
 loadNotices();
 loadApplicants();
+loadSchedules();

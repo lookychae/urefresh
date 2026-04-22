@@ -31,3 +31,7 @@ function apiGetNotices(){
 function apiGetAllApps(){
   return fetch(SCRIPT_URL).then(function(r){ return r.json(); });
 }
+
+function apiGetSchedules(){
+  return fetch(SCRIPT_URL + '?action=getSchedules').then(function(r){ return r.json(); });
+}
