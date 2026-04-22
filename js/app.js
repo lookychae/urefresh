@@ -75,8 +75,11 @@ function buildCalendar(){
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
 
-  var startTs = settings && settings.start ? new Date(settings.start).setHours(0,0,0,0) : null;
-  var endTs   = settings && settings.end   ? new Date(settings.end).setHours(23,59,59,999) : null;
+  // 캘린더 가용 날짜 = 관리자가 [일정 관리] 에 등록한 이용일 (schedule.date)
+  var scheduleDateSet = {};
+  for(var si = 0; si < SCHEDULES_CACHE.length; si++){
+    if(SCHEDULES_CACHE[si].date) scheduleDateSet[SCHEDULES_CACHE[si].date] = true;
+  }
 
   var container = document.getElementById('cal-days');
   container.innerHTML = '';
@@ -90,10 +93,9 @@ function buildCalendar(){
 
   for(var d=1; d<=daysInMonth; d++){
     var dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    var ts  = new Date(calYear, calMonth, d).getTime();
     var dow = new Date(calYear, calMonth, d).getDay();
 
-    var isAvailable = startTs && endTs && ts >= startTs && ts <= endTs;
+    var isAvailable = !!scheduleDateSet[dateStr];
     var cell = document.createElement('div');
     var classes = ['cal-day'];
     if(dow === 0) classes.push('sun');
@@ -125,6 +127,31 @@ function calNext(){
   buildCalendar();
 }
 
+// ── 헬퍼: 이용일로 일정 객체 조회 ──
+function _getScheduleForDate(isoDate){
+  for(var i = 0; i < SCHEDULES_CACHE.length; i++){
+    if(SCHEDULES_CACHE[i].date === isoDate) return SCHEDULES_CACHE[i];
+  }
+  return null;
+}
+
+// ── 오늘 날짜를 YYYY-MM-DD 로 반환 ──
+function _todayIsoDate(){
+  var d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+// ── 신청 윈도우 상태: before / open / after / no-schedule ──
+function _getApplicationState(schedule){
+  if(!schedule) return 'no-schedule';
+  var today = _todayIsoDate();
+  if(schedule.start && today < schedule.start) return 'before';
+  if(schedule.end   && today > schedule.end)   return 'after';
+  return 'open';
+}
+
 function selectDate(dateStr){
   var parts = dateStr.split('-');
   var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
@@ -132,26 +159,37 @@ function selectDate(dateStr){
   var days  = ['일','월','화','수','목','금','토'];
   var label = y + '년 ' + m + '월 ' + d + '일';
 
-  // 실제 데이터 기반 집계 (취소 제외)
+  // 일정 + 신청 윈도우 상태
+  var schedule = _getScheduleForDate(dateStr);
+  var state    = _getApplicationState(schedule);
+
+  // 실제 데이터 기반 집계
   var apply = countAppsByDate_(label);
-  var slots = getSlotsForDate_(dateStr);
+  var slots = schedule ? (Number(schedule.slots) || 0) : 0;
   var rate  = slots > 0 ? (apply / slots) : 0;
 
   selDate = {
     isoDate: dateStr,
     label:   label,
     weekday: WEEKDAYS_FULL[dow],
-    apply: apply, slots: slots, rate: rate
+    apply: apply, slots: slots, rate: rate,
+    state: state
   };
 
   var info = document.getElementById('sel-info');
   info.classList.add('on');
+
+  // 뱃지 선택
   var chipHtml = '';
-  if(slots === 0)         chipHtml = '<span class="chip chip-gray" style="margin-left:8px">일정 미등록</span>';
-  else if(rate >= 4)      chipHtml = '<span class="chip chip-red" style="margin-left:8px">경쟁 과열</span>';
-  else if(rate >= 2.5)    chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
-  else if(rate >= 1.5)    chipHtml = '<span class="chip chip-blue" style="margin-left:8px">경쟁 보통</span>';
-  else                    chipHtml = '<span class="chip chip-green" style="margin-left:8px">신청 가능</span>';
+  if(state === 'no-schedule')      chipHtml = '<span class="chip chip-gray"   style="margin-left:8px">일정 미등록</span>';
+  else if(state === 'before')      chipHtml = '<span class="chip chip-gray"   style="margin-left:8px">신청 전</span>';
+  else if(state === 'after')       chipHtml = '<span class="chip chip-red"    style="margin-left:8px">신청 마감</span>';
+  else if(apply === 0)             chipHtml = '<span class="chip chip-green"  style="margin-left:8px">신청 가능</span>';
+  else if(rate >= 4)               chipHtml = '<span class="chip chip-red"    style="margin-left:8px">경쟁 과열</span>';
+  else if(rate >= 2.5)             chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
+  else if(rate >= 1.5)             chipHtml = '<span class="chip chip-blue"   style="margin-left:8px">경쟁 보통</span>';
+  else                             chipHtml = '<span class="chip chip-green"  style="margin-left:8px">신청 가능</span>';
+
   document.getElementById('sel-info-date').innerHTML = label + ' (' + days[dow] + ')' + chipHtml;
   document.getElementById('sel-apply').textContent = apply + '명';
   if(slots === 0){
@@ -160,6 +198,19 @@ function selectDate(dateStr){
   } else {
     document.getElementById('sel-slots').textContent = slots + '구좌';
     document.getElementById('sel-rate').textContent  = rate.toFixed(1) + ':1';
+  }
+
+  // 신청 버튼 상태
+  var applyBtn = document.getElementById('sel-apply-btn');
+  if(applyBtn){
+    var canApply = state === 'open';
+    applyBtn.disabled = !canApply;
+    applyBtn.style.opacity = canApply ? '1' : '.4';
+    applyBtn.style.cursor  = canApply ? 'pointer' : 'not-allowed';
+    if(state === 'before')           applyBtn.textContent = '아직 신청 기간이 아닙니다';
+    else if(state === 'after')       applyBtn.textContent = '신청이 마감되었습니다';
+    else if(state === 'no-schedule') applyBtn.textContent = '일정 미등록';
+    else                             applyBtn.textContent = '이 날짜로 신청하기';
   }
 
   setTimeout(function(){ info.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 100);
@@ -202,6 +253,8 @@ function loadSchedules(){
           };
         });
       }
+      // 캘린더에 이용일 반영
+      buildCalendar();
       if(selDate && selDate.isoDate){
         selectDate(selDate.isoDate);
       }
@@ -265,6 +318,18 @@ function go(id){
 
 function goDetail(){
   if(!selDate) return;
+
+  // 신청 윈도우 재검증
+  var schedule = _getScheduleForDate(selDate.isoDate);
+  var state    = _getApplicationState(schedule);
+  if(state !== 'open'){
+    var msg = state === 'before' ? '아직 신청 기간이 아닙니다.' :
+              state === 'after'  ? '신청이 마감되었습니다.' :
+              '등록된 일정이 없습니다.';
+    alert(msg);
+    return;
+  }
+
   document.getElementById('dh-date').textContent  = selDate.label;
   document.getElementById('dh-day').textContent   = selDate.weekday;
   document.getElementById('dh-apply').innerHTML   = selDate.apply + '<span class="dhs-unit">명</span>';
