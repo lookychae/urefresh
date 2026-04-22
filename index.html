@@ -126,8 +126,8 @@
     </div>
     <div style="padding:18px 20px 8px;font-size:15px;font-weight:700;color:var(--ink);">신청 정보 입력</div>
     <div class="form-card" id="form-card">
-      <div class="frow"><div class="fl">사번</div><div class="fdiv"></div><input class="fi" id="f-eno" type="text" placeholder="예: 12345" inputmode="numeric" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');checkForm()"></div>
-      <div class="frow"><div class="fl">성명</div><div class="fdiv"></div><input class="fi" id="f-nm" type="text" placeholder="홍길동" autocomplete="off" oninput="this.value=this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g,'');checkForm()"></div>
+      <div class="frow"><div class="fl">사번</div><div class="fdiv"></div><input class="fi" id="f-eno" type="text" placeholder="예: 12345 (숫자만 입력가능)" inputmode="numeric" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');checkForm()"></div>
+      <div class="frow"><div class="fl">성명</div><div class="fdiv"></div><input class="fi" id="f-nm" type="text" placeholder="홍길동 (한글만 입력가능)" autocomplete="off" oninput="this.value=this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g,'');checkForm()"></div>
       <div class="frow"><div class="fl">연락처</div><div class="fdiv"></div><input class="fi" id="f-tel" type="tel" placeholder="010-0000-0000" inputmode="numeric" oninput="formatTel(this);checkForm()"></div>
       <div class="frow"><div class="fl">이메일</div><div class="fdiv"></div>
         <div class="email-fixed">
