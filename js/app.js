@@ -154,8 +154,13 @@ function selectDate(dateStr){
   else                    chipHtml = '<span class="chip chip-green" style="margin-left:8px">신청 가능</span>';
   document.getElementById('sel-info-date').innerHTML = label + ' (' + days[dow] + ')' + chipHtml;
   document.getElementById('sel-apply').textContent = apply + '명';
-  document.getElementById('sel-slots').textContent = slots + '구좌';
-  document.getElementById('sel-rate').textContent  = rate.toFixed(1) + ':1';
+  if(slots === 0){
+    document.getElementById('sel-slots').textContent = '—';
+    document.getElementById('sel-rate').textContent  = '—';
+  } else {
+    document.getElementById('sel-slots').textContent = slots + '구좌';
+    document.getElementById('sel-rate').textContent  = rate.toFixed(1) + ':1';
+  }
 
   setTimeout(function(){ info.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 100);
   buildCalendar();
