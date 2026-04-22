@@ -177,15 +177,9 @@ function goDetail(){
   document.getElementById('dh-slots').innerHTML   = selDate.slots + '<span class="dhs-unit">구좌</span>';
   document.getElementById('dh-rate').innerHTML    = selDate.rate.toFixed(1) + '<span class="dhs-unit">:1</span>';
 
-  ['f-eno','f-nm','f-tel','f-email-local','f-email-domain'].forEach(function(id){
+  ['f-eno','f-nm','f-tel','f-email-local'].forEach(function(id){
     document.getElementById(id).value = '';
   });
-  // 이메일 도메인 선택 초기화 (직접 입력 모드)
-  var emailSel = document.getElementById('f-email-select');
-  emailSel.value = '';
-  var emailDomain = document.getElementById('f-email-domain');
-  emailDomain.readOnly = false;
-  emailDomain.style.background = '';
   document.getElementById('sel-val').textContent = '본인 포함 1명';
   var box = document.getElementById('chk-infant');
   box.classList.remove('on');
@@ -221,49 +215,33 @@ function goDetail(){
 // ══════════════════════════════════════════════════════════
 // 폼 입력/검증
 // ══════════════════════════════════════════════════════════
-// 이메일 형식: 소문자/숫자@도메인.tld
-var EMAIL_RE = /^[a-z0-9]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+// 이메일 도메인 고정값
+var EMAIL_DOMAIN = 'umoment.co.kr';
+var EMAIL_LOCAL_RE = /^[a-z0-9]+$/;
+
+// 전체 이메일 주소 반환 (local@umoment.co.kr)
+function getEmailValue(){
+  var local = (document.getElementById('f-email-local').value || '').trim();
+  if(!local) return '';
+  return local + '@' + EMAIL_DOMAIN;
+}
 
 function isValidEmail(v){
-  return EMAIL_RE.test((v || '').trim());
-}
-
-// 드롭다운에서 도메인 선택 시 도메인 input 자동 채움 + readonly 처리
-function handleEmailDomain(sel){
-  var domain = document.getElementById('f-email-domain');
-  if(sel.value){
-    domain.value = sel.value;
-    domain.readOnly = true;
-  } else {
-    domain.value = '';
-    domain.readOnly = false;
-    domain.focus();
-  }
-  checkForm();
-}
-
-// 현재 폼에서 조합된 이메일 주소 반환
-function getEmailValue(){
-  var local  = (document.getElementById('f-email-local').value  || '').trim();
-  var domain = (document.getElementById('f-email-domain').value || '').trim();
-  if(!local || !domain) return '';
-  return local + '@' + domain;
+  var parts = (v || '').split('@');
+  if(parts.length !== 2) return false;
+  return EMAIL_LOCAL_RE.test(parts[0]) && parts[1] === EMAIL_DOMAIN;
 }
 
 function checkForm(){
-  var localInput  = document.getElementById('f-email-local');
-  var domainInput = document.getElementById('f-email-domain');
-  var email   = getEmailValue();
-  var emailOk = isValidEmail(email);
+  var localInput = document.getElementById('f-email-local');
+  var localVal   = (localInput.value || '').trim();
+  var emailOk    = EMAIL_LOCAL_RE.test(localVal);
 
-  // 시각적 피드백: 뭔가 입력했는데 아직 유효하지 않을 때만 빨갛게
-  var dirty = (localInput.value || domainInput.value);
-  if(dirty && !emailOk){
-    localInput.style.color  = 'var(--red-dk)';
-    domainInput.style.color = 'var(--red-dk)';
+  // 시각 피드백: 입력했는데 형식이 아직 맞지 않을 때 빨갛게
+  if(localVal && !emailOk){
+    localInput.style.color = 'var(--red-dk)';
   } else {
-    localInput.style.color  = '';
-    domainInput.style.color = '';
+    localInput.style.color = '';
   }
 
   var ok = (document.getElementById('f-eno').value || '').trim() &&

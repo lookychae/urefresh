@@ -129,24 +129,11 @@
       <div class="frow"><div class="fl">사번</div><div class="fdiv"></div><input class="fi" id="f-eno" type="text" placeholder="예: 12345" inputmode="numeric" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'');checkForm()"></div>
       <div class="frow"><div class="fl">성명</div><div class="fdiv"></div><input class="fi" id="f-nm" type="text" placeholder="홍길동" autocomplete="off" oninput="this.value=this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣ]/g,'');checkForm()"></div>
       <div class="frow"><div class="fl">연락처</div><div class="fdiv"></div><input class="fi" id="f-tel" type="tel" placeholder="010-0000-0000" inputmode="numeric" oninput="formatTel(this);checkForm()"></div>
-      <div class="frow frow-auto"><div class="fl">이메일</div><div class="fdiv"></div>
-        <div class="email-grid">
-          <input class="fi" id="f-email-local" type="text" placeholder="user" autocomplete="email"
+      <div class="frow"><div class="fl">이메일</div><div class="fdiv"></div>
+        <div class="email-fixed">
+          <input class="fi" id="f-email-local" type="text" placeholder="아이디" autocomplete="email" inputmode="email"
                  oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9]/g,'');checkForm()">
-          <span class="email-at">@</span>
-          <input class="fi" id="f-email-domain" type="text" placeholder="직접 입력"
-                 oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9.-]/g,'');document.getElementById('f-email-select').value='';checkForm()">
-          <select class="email-select" id="f-email-select" onchange="handleEmailDomain(this)">
-            <option value="">직접 입력</option>
-            <option value="naver.com">naver.com</option>
-            <option value="gmail.com">gmail.com</option>
-            <option value="daum.net">daum.net</option>
-            <option value="hanmail.net">hanmail.net</option>
-            <option value="kakao.com">kakao.com</option>
-            <option value="nate.com">nate.com</option>
-            <option value="hotmail.com">hotmail.com</option>
-            <option value="outlook.com">outlook.com</option>
-          </select>
+          <span class="email-suffix">@umoment.co.kr</span>
         </div>
       </div>
       <div class="frow" onclick="toggleDp()">
