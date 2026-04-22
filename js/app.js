@@ -187,7 +187,21 @@ function loadApplicants(){
 function loadSchedules(){
   apiGetSchedules()
     .then(function(rows){
-      SCHEDULES_CACHE = Array.isArray(rows) ? rows : [];
+      if(!Array.isArray(rows)){
+        SCHEDULES_CACHE = [];
+      } else {
+        // 서버가 긴 Date 포맷으로 반환하는 케이스 대비 정규화
+        SCHEDULES_CACHE = rows.map(function(r){
+          return {
+            date:  _normalizeIsoDate(r.date),
+            day:   r.day || '',
+            room:  r.room || '',
+            slots: Number(r.slots || 0),
+            start: _normalizeIsoDate(r.start),
+            end:   _normalizeIsoDate(r.end)
+          };
+        });
+      }
       if(selDate && selDate.isoDate){
         selectDate(selDate.isoDate);
       }
@@ -195,6 +209,17 @@ function loadSchedules(){
     .catch(function(err){
       console.warn('[loadSchedules] failed', err);
     });
+}
+
+function _normalizeIsoDate(v){
+  if(!v) return '';
+  var s = String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  var d = new Date(s);
+  if(isNaN(d.getTime())) return s;
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
 }
 
 // Google Sheets 이용일 값 → 한국어 라벨로 정규화
