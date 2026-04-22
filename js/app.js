@@ -147,11 +147,11 @@ function selectDate(dateStr){
   var info = document.getElementById('sel-info');
   info.classList.add('on');
   var chipHtml = '';
-  if(apply === 0)         chipHtml = '<span class="chip chip-gray" style="margin-left:8px">신청 전</span>';
+  if(slots === 0)         chipHtml = '<span class="chip chip-gray" style="margin-left:8px">일정 미등록</span>';
   else if(rate >= 4)      chipHtml = '<span class="chip chip-red" style="margin-left:8px">경쟁 과열</span>';
   else if(rate >= 2.5)    chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
   else if(rate >= 1.5)    chipHtml = '<span class="chip chip-blue" style="margin-left:8px">경쟁 보통</span>';
-  else                    chipHtml = '<span class="chip chip-green" style="margin-left:8px">여유</span>';
+  else                    chipHtml = '<span class="chip chip-green" style="margin-left:8px">신청 가능</span>';
   document.getElementById('sel-info-date').innerHTML = label + ' (' + days[dow] + ')' + chipHtml;
   document.getElementById('sel-apply').textContent = apply + '명';
   document.getElementById('sel-slots').textContent = slots + '구좌';
