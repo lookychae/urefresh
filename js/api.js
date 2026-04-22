@@ -27,3 +27,7 @@ function apiCancelApp(eno, at){
 function apiGetNotices(){
   return fetch(SCRIPT_URL + '?action=getNotices').then(function(r){ return r.json(); });
 }
+
+function apiGetAllApps(){
+  return fetch(SCRIPT_URL).then(function(r){ return r.json(); });
+}

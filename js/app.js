@@ -102,10 +102,8 @@ function buildCalendar(){
 
     if(isAvailable){
       classes.push('available');
-      var rate = Math.random() * 5;
       cell.dataset.date = dateStr;
-      cell.dataset.rate = rate.toFixed(1);
-      cell.onclick = (function(ds, r){ return function(){ selectDate(ds, r); }; })(dateStr, rate);
+      cell.onclick = (function(ds){ return function(){ selectDate(ds); }; })(dateStr);
     }
 
     if(selDate && selDate.isoDate === dateStr) classes.push('selected');
@@ -127,36 +125,84 @@ function calNext(){
   buildCalendar();
 }
 
-function selectDate(dateStr, rate){
+function selectDate(dateStr){
   var parts = dateStr.split('-');
   var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
   var dow = new Date(y, m-1, d).getDay();
   var days  = ['일','월','화','수','목','금','토'];
-  var apply = Math.floor(rate * 10);
-  var slots = 10;
+  var label = y + '년 ' + m + '월 ' + d + '일';
+
+  // 실제 데이터 기반 집계 (취소 제외)
+  var apply = countAppsByDate_(label);
+  var slots = getSlotsForDate_(label);
+  var rate  = slots > 0 ? (apply / slots) : 0;
 
   selDate = {
     isoDate: dateStr,
-    label:   y + '년 ' + m + '월 ' + d + '일',
+    label:   label,
     weekday: WEEKDAYS_FULL[dow],
-    apply: apply, slots: slots, rate: parseFloat(rate)
+    apply: apply, slots: slots, rate: rate
   };
 
   var info = document.getElementById('sel-info');
   info.classList.add('on');
-  var rateNum = parseFloat(rate);
   var chipHtml = '';
-  if(rateNum >= 4)        chipHtml = '<span class="chip chip-red" style="margin-left:8px">경쟁 과열</span>';
-  else if(rateNum >= 2.5) chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
-  else if(rateNum >= 1.5) chipHtml = '<span class="chip chip-blue" style="margin-left:8px">경쟁 보통</span>';
+  if(apply === 0)         chipHtml = '<span class="chip chip-gray" style="margin-left:8px">신청 전</span>';
+  else if(rate >= 4)      chipHtml = '<span class="chip chip-red" style="margin-left:8px">경쟁 과열</span>';
+  else if(rate >= 2.5)    chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
+  else if(rate >= 1.5)    chipHtml = '<span class="chip chip-blue" style="margin-left:8px">경쟁 보통</span>';
   else                    chipHtml = '<span class="chip chip-green" style="margin-left:8px">여유</span>';
-  document.getElementById('sel-info-date').innerHTML = y + '년 ' + m + '월 ' + d + '일 (' + days[dow] + ')' + chipHtml;
+  document.getElementById('sel-info-date').innerHTML = label + ' (' + days[dow] + ')' + chipHtml;
   document.getElementById('sel-apply').textContent = apply + '명';
   document.getElementById('sel-slots').textContent = slots + '구좌';
-  document.getElementById('sel-rate').textContent  = parseFloat(rate).toFixed(1) + ':1';
+  document.getElementById('sel-rate').textContent  = rate.toFixed(1) + ':1';
 
   setTimeout(function(){ info.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 100);
   buildCalendar();
+}
+
+// 신청 내역 캐시 + 집계 헬퍼
+var APPLICANTS_CACHE = [];
+var DEFAULT_SLOTS = 10;
+
+function loadApplicants(){
+  apiGetAllApps()
+    .then(function(rows){
+      APPLICANTS_CACHE = Array.isArray(rows) ? rows : [];
+      // 선택된 날짜가 있으면 집계값 갱신
+      if(selDate && selDate.isoDate){
+        selectDate(selDate.isoDate);
+      }
+    })
+    .catch(function(err){
+      console.warn('[loadApplicants] failed', err);
+    });
+}
+
+// Google Sheets 이용일 값 → 한국어 라벨로 정규화
+function normalizeDateLabel_(v){
+  if(!v) return '';
+  var s = String(v);
+  if(s.indexOf('T') > -1){
+    var d = new Date(s);
+    if(!isNaN(d.getTime())){
+      return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일';
+    }
+  }
+  return s;
+}
+
+function countAppsByDate_(label){
+  return APPLICANTS_CACHE.filter(function(a){
+    var status = String(a['상태'] || '');
+    if(status === 'cancelled' || status === '취소됨') return false;
+    return normalizeDateLabel_(a['이용일']) === label;
+  }).length;
+}
+
+// 날짜별 배정 구좌 수 (추후 시트 연동 여지 있음, 현재는 기본값)
+function getSlotsForDate_(label){
+  return DEFAULT_SLOTS;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -338,6 +384,7 @@ function doSubmit(){
       document.getElementById('s-date').textContent = selDate ? selDate.label : '—';
       document.getElementById('s-eno').textContent  = e;
       go('sc-success');
+      loadApplicants(); // 신청 인원 집계 즉시 반영
     });
 }
 
@@ -566,3 +613,4 @@ function openNoticeDetail(id){
 // ══════════════════════════════════════════════════════════
 loadSettings();
 loadNotices();
+loadApplicants();
