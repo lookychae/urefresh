@@ -65,9 +65,9 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
 .cal-day.empty .cal-num{color:transparent;}
 .cal-day.sun .cal-num{color:var(--red-dk);opacity:.5;}
 .cal-day.sat .cal-num{color:var(--blue-dk);opacity:.5;}
-.cal-day.available{background:var(--blue-ll);cursor:pointer;}
-.cal-day.available .cal-num{color:var(--blue-dk);font-weight:700;}
-.cal-day.available:active{background:var(--blue-l);}
+.cal-day.available{cursor:pointer;}
+.cal-day.available .cal-num{font-weight:700;}
+.cal-day.available:active{opacity:.75;}
 .cal-day.today .cal-num{font-weight:900;}
 .cal-day.today::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--blue);position:absolute;bottom:4px;}
 .cal-day.selected{background:var(--blue) !important;box-shadow:0 2px 8px rgba(49,130,246,.4);}
@@ -82,7 +82,17 @@ html,body{height:100dvh;width:100%;overflow:hidden;font-family:"Noto Sans KR",-a
 /* SELECTED DATE INFO */
 .sel-info{margin:10px 16px 0;background:var(--card);border-radius:var(--radius);border:1px solid var(--sep);padding:16px;display:none;}
 .sel-info.on{display:block;}
-.sel-info-date{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:12px;letter-spacing:-.3px;}
+.sel-info-date{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:10px;letter-spacing:-.3px;}
+.sel-usage{
+  display:flex;align-items:center;gap:8px;
+  background:var(--blue-ll);border-radius:8px;
+  padding:10px 12px;margin-bottom:12px;
+}
+.sel-usage-lbl{
+  font-size:11px;font-weight:700;color:var(--blue-dk);
+  background:#fff;border-radius:4px;padding:2px 8px;flex-shrink:0;
+}
+.sel-usage-val{font-size:14px;font-weight:700;color:var(--blue-dk);}
 .sel-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
 .sel-stat{background:var(--page);border-radius:10px;padding:10px;text-align:center;}
 .sel-stat-val{font-size:18px;font-weight:900;color:var(--ink);letter-spacing:-.4px;line-height:1;}

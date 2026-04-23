@@ -5,8 +5,12 @@
  */
 
 var WEEKDAYS_FULL = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+var COLOR_MAP = {
+  red:'#F04452', orange:'#FF6B00', yellow:'#F5C500',
+  green:'#05C072', blue:'#3182F6', navy:'#3D4FE0', purple:'#9B51E0'
+};
 var settings = null;
-var selDate  = null;
+var selDate  = null;  // { clickIsoDate, clickLabel, usageIsoDate, usageLabel, schedule, apply, slots, rate }
 var calYear, calMonth;
 var _histList = [];
 var NOTICES = [];
@@ -75,12 +79,6 @@ function buildCalendar(){
     String(today.getMonth()+1).padStart(2,'0') + '-' +
     String(today.getDate()).padStart(2,'0');
 
-  // 캘린더 가용 날짜 = 관리자가 [일정 관리] 에 등록한 이용일 (schedule.date)
-  var scheduleDateSet = {};
-  for(var si = 0; si < SCHEDULES_CACHE.length; si++){
-    if(SCHEDULES_CACHE[si].date) scheduleDateSet[SCHEDULES_CACHE[si].date] = true;
-  }
-
   var container = document.getElementById('cal-days');
   container.innerHTML = '';
 
@@ -95,7 +93,10 @@ function buildCalendar(){
     var dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     var dow = new Date(calYear, calMonth, d).getDay();
 
-    var isAvailable = !!scheduleDateSet[dateStr];
+    // 이 날짜가 어떤 일정의 신청 기간에 속하는가?
+    var schedule = _getScheduleByApplicationWindow(dateStr);
+    var isAvailable = !!schedule;
+
     var cell = document.createElement('div');
     var classes = ['cal-day'];
     if(dow === 0) classes.push('sun');
@@ -104,11 +105,15 @@ function buildCalendar(){
 
     if(isAvailable){
       classes.push('available');
+      // 해당 일정의 룸 컬러 적용
+      var colorHex = COLOR_MAP[schedule.color] || '#3182F6';
+      cell.style.background = colorHex;
+      cell.style.color = '#fff';
       cell.dataset.date = dateStr;
       cell.onclick = (function(ds){ return function(){ selectDate(ds); }; })(dateStr);
     }
 
-    if(selDate && selDate.isoDate === dateStr) classes.push('selected');
+    if(selDate && selDate.clickIsoDate === dateStr) classes.push('selected');
     cell.className = classes.join(' ');
     cell.innerHTML = '<span class="cal-num">' + d + '</span>';
     container.appendChild(cell);
@@ -127,10 +132,12 @@ function calNext(){
   buildCalendar();
 }
 
-// ── 헬퍼: 이용일로 일정 객체 조회 ──
-function _getScheduleForDate(isoDate){
+// ── 헬퍼: 주어진 날짜가 어느 일정의 신청 기간에 속하는가 ──
+function _getScheduleByApplicationWindow(isoDate){
   for(var i = 0; i < SCHEDULES_CACHE.length; i++){
-    if(SCHEDULES_CACHE[i].date === isoDate) return SCHEDULES_CACHE[i];
+    var s = SCHEDULES_CACHE[i];
+    if(!s.start || !s.end) continue;
+    if(isoDate >= s.start && isoDate <= s.end) return s;
   }
   return null;
 }
@@ -143,7 +150,7 @@ function _todayIsoDate(){
     String(d.getDate()).padStart(2, '0');
 }
 
-// ── 신청 윈도우 상태: before / open / after / no-schedule ──
+// ── 신청 윈도우 상태 ──
 function _getApplicationState(schedule){
   if(!schedule) return 'no-schedule';
   var today = _todayIsoDate();
@@ -152,26 +159,44 @@ function _getApplicationState(schedule){
   return 'open';
 }
 
+// ── isoDate(YYYY-MM-DD) 를 한국어 라벨 'YYYY년 M월 D일' 로 ──
+function _isoToKoreanLabel(isoDate){
+  if(!isoDate) return '';
+  var p = String(isoDate).split('-');
+  if(p.length !== 3) return String(isoDate);
+  return parseInt(p[0]) + '년 ' + parseInt(p[1]) + '월 ' + parseInt(p[2]) + '일';
+}
+
+// ── isoDate 의 요일(일/월/…/토) ──
+function _isoWeekday(isoDate){
+  var p = String(isoDate).split('-');
+  if(p.length !== 3) return '';
+  var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+  return ['일','월','화','수','목','금','토'][d.getDay()];
+}
+
 function selectDate(dateStr){
-  var parts = dateStr.split('-');
-  var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
-  var dow = new Date(y, m-1, d).getDay();
-  var days  = ['일','월','화','수','목','금','토'];
-  var label = y + '년 ' + m + '월 ' + d + '일';
+  var schedule = _getScheduleByApplicationWindow(dateStr);
+  if(!schedule) return; // 클릭 가능 영역이 아니면 무시
 
-  // 일정 + 신청 윈도우 상태
-  var schedule = _getScheduleForDate(dateStr);
-  var state    = _getApplicationState(schedule);
+  var state = _getApplicationState(schedule);
+  var clickLabel  = _isoToKoreanLabel(dateStr);
+  var clickDow    = _isoWeekday(dateStr);
+  var usageLabel  = _isoToKoreanLabel(schedule.date);
+  var usageDow    = _isoWeekday(schedule.date);
 
-  // 실제 데이터 기반 집계
-  var apply = countAppsByDate_(label);
-  var slots = schedule ? (Number(schedule.slots) || 0) : 0;
+  // 신청 인원 집계는 '이용일' 기준
+  var apply = countAppsByDate_(usageLabel);
+  var slots = Number(schedule.slots) || 0;
   var rate  = slots > 0 ? (apply / slots) : 0;
 
   selDate = {
-    isoDate: dateStr,
-    label:   label,
-    weekday: WEEKDAYS_FULL[dow],
+    clickIsoDate: dateStr,
+    clickLabel:   clickLabel,
+    usageIsoDate: schedule.date,
+    usageLabel:   usageLabel,
+    usageWeekday: usageDow + '요일',
+    schedule:     schedule,
     apply: apply, slots: slots, rate: rate,
     state: state
   };
@@ -179,18 +204,18 @@ function selectDate(dateStr){
   var info = document.getElementById('sel-info');
   info.classList.add('on');
 
-  // 뱃지 선택
+  // 뱃지
   var chipHtml = '';
-  if(state === 'no-schedule')      chipHtml = '<span class="chip chip-gray"   style="margin-left:8px">일정 미등록</span>';
-  else if(state === 'before')      chipHtml = '<span class="chip chip-gray"   style="margin-left:8px">신청 전</span>';
-  else if(state === 'after')       chipHtml = '<span class="chip chip-red"    style="margin-left:8px">신청 마감</span>';
-  else if(apply === 0)             chipHtml = '<span class="chip chip-green"  style="margin-left:8px">신청 가능</span>';
-  else if(rate >= 4)               chipHtml = '<span class="chip chip-red"    style="margin-left:8px">경쟁 과열</span>';
-  else if(rate >= 2.5)             chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
-  else if(rate >= 1.5)             chipHtml = '<span class="chip chip-blue"   style="margin-left:8px">경쟁 보통</span>';
-  else                             chipHtml = '<span class="chip chip-green"  style="margin-left:8px">신청 가능</span>';
+  if(state === 'before')      chipHtml = '<span class="chip chip-gray"   style="margin-left:8px">신청 전</span>';
+  else if(state === 'after')  chipHtml = '<span class="chip chip-red"    style="margin-left:8px">신청 마감</span>';
+  else if(apply === 0)        chipHtml = '<span class="chip chip-green"  style="margin-left:8px">신청 가능</span>';
+  else if(rate >= 4)          chipHtml = '<span class="chip chip-red"    style="margin-left:8px">경쟁 과열</span>';
+  else if(rate >= 2.5)        chipHtml = '<span class="chip chip-orange" style="margin-left:8px">경쟁 높음</span>';
+  else if(rate >= 1.5)        chipHtml = '<span class="chip chip-blue"   style="margin-left:8px">경쟁 보통</span>';
+  else                        chipHtml = '<span class="chip chip-green"  style="margin-left:8px">신청 가능</span>';
 
-  document.getElementById('sel-info-date').innerHTML = label + ' (' + days[dow] + ')' + chipHtml;
+  document.getElementById('sel-info-date').innerHTML = clickLabel + ' (' + clickDow + ')' + chipHtml;
+  document.getElementById('sel-usage-val').textContent = usageLabel + ' (' + usageDow + ') · ' + (schedule.room || '');
   document.getElementById('sel-apply').textContent = apply + '명';
   if(slots === 0){
     document.getElementById('sel-slots').textContent = '—';
@@ -200,17 +225,16 @@ function selectDate(dateStr){
     document.getElementById('sel-rate').textContent  = rate.toFixed(1) + ':1';
   }
 
-  // 신청 버튼 상태
+  // 버튼 상태
   var applyBtn = document.getElementById('sel-apply-btn');
   if(applyBtn){
     var canApply = state === 'open';
     applyBtn.disabled = !canApply;
     applyBtn.style.opacity = canApply ? '1' : '.4';
     applyBtn.style.cursor  = canApply ? 'pointer' : 'not-allowed';
-    if(state === 'before')           applyBtn.textContent = '아직 신청 기간이 아닙니다';
-    else if(state === 'after')       applyBtn.textContent = '신청이 마감되었습니다';
-    else if(state === 'no-schedule') applyBtn.textContent = '일정 미등록';
-    else                             applyBtn.textContent = '이 날짜로 신청하기';
+    if(state === 'before')     applyBtn.textContent = '아직 신청 기간이 아닙니다';
+    else if(state === 'after') applyBtn.textContent = '신청이 마감되었습니다';
+    else                       applyBtn.textContent = usageLabel + ' 이용 신청하기';
   }
 
   setTimeout(function(){ info.scrollIntoView({behavior:'smooth', block:'nearest'}); }, 100);
@@ -256,13 +280,13 @@ function loadSchedules(){
         });
       }
 
-      // 최초 로드 시 가장 이른 이용일이 있는 월로 캘린더 이동
+      // 최초 로드 시 가장 이른 신청 시작일이 있는 월로 캘린더 이동
       if(_schedulesFirstLoad && SCHEDULES_CACHE.length > 0 && !selDate){
         var earliest = SCHEDULES_CACHE.slice()
-          .filter(function(s){ return s.date; })
-          .sort(function(a, b){ return a.date < b.date ? -1 : 1; })[0];
-        if(earliest && earliest.date){
-          var parts = earliest.date.split('-');
+          .filter(function(s){ return s.start; })
+          .sort(function(a, b){ return a.start < b.start ? -1 : 1; })[0];
+        if(earliest && earliest.start){
+          var parts = earliest.start.split('-');
           calYear  = parseInt(parts[0]);
           calMonth = parseInt(parts[1]) - 1;
         }
@@ -336,8 +360,8 @@ function goDetail(){
   if(!selDate) return;
 
   // 신청 윈도우 재검증
-  var schedule = _getScheduleForDate(selDate.isoDate);
-  var state    = _getApplicationState(schedule);
+  var schedule = selDate.schedule || _getScheduleByApplicationWindow(selDate.clickIsoDate);
+  var state = _getApplicationState(schedule);
   if(state !== 'open'){
     var msg = state === 'before' ? '아직 신청 기간이 아닙니다.' :
               state === 'after'  ? '신청이 마감되었습니다.' :
@@ -346,8 +370,9 @@ function goDetail(){
     return;
   }
 
-  document.getElementById('dh-date').textContent  = selDate.label;
-  document.getElementById('dh-day').textContent   = selDate.weekday;
+  // 상세 페이지에는 '이용일' 표시 (클릭 날짜 아님)
+  document.getElementById('dh-date').textContent  = selDate.usageLabel;
+  document.getElementById('dh-day').textContent   = selDate.usageWeekday;
   document.getElementById('dh-apply').innerHTML   = selDate.apply + '<span class="dhs-unit">명</span>';
   document.getElementById('dh-slots').innerHTML   = selDate.slots + '<span class="dhs-unit">구좌</span>';
   document.getElementById('dh-rate').innerHTML    = selDate.rate.toFixed(1) + '<span class="dhs-unit">:1</span>';
@@ -493,8 +518,9 @@ function doSubmit(){
               String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
   var payload = {
     at: atStr, eno: e, name: nm, tel: tel, email: email,
-    date: selDate ? selDate.label : '',
-    room: '—', fam: fam,
+    date: selDate ? selDate.usageLabel : '',
+    room: selDate && selDate.schedule ? (selDate.schedule.room || '—') : '—',
+    fam: fam,
     infant:  infant ? '예' : '아니오',
     toddler: '아니오',
     status:  '신청완료'
@@ -502,15 +528,15 @@ function doSubmit(){
 
   saveLocal(Object.assign({}, payload, {
     id: Date.now(),
-    dateLabel: selDate ? selDate.label   : '',
-    isoDate:   selDate ? selDate.isoDate : ''
+    dateLabel: selDate ? selDate.usageLabel   : '',
+    isoDate:   selDate ? selDate.usageIsoDate : ''
   }));
 
   apiSaveApp(payload)
     .catch(function(){})
     .finally(function(){
       document.getElementById('loading-overlay').classList.remove('on');
-      document.getElementById('s-date').textContent = selDate ? selDate.label : '—';
+      document.getElementById('s-date').textContent = selDate ? selDate.usageLabel : '—';
       document.getElementById('s-eno').textContent  = e;
       go('sc-success');
       loadApplicants(); // 신청 인원 집계 즉시 반영
