@@ -9,6 +9,15 @@ var COLOR_MAP = {
   red:'#F04452', orange:'#FF6B00', yellow:'#F5C500',
   green:'#05C072', blue:'#3182F6', navy:'#3D4FE0', purple:'#9B51E0'
 };
+
+function _hexToRgba(hex, alpha){
+  var h = String(hex || '').replace('#', '');
+  if(h.length !== 6) return hex;
+  var r = parseInt(h.substring(0,2), 16);
+  var g = parseInt(h.substring(2,4), 16);
+  var b = parseInt(h.substring(4,6), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
 var settings = null;
 var selDate  = null;  // { clickIsoDate, clickLabel, usageIsoDate, usageLabel, schedule, apply, slots, rate }
 var calYear, calMonth;
@@ -135,10 +144,10 @@ function buildCalendar(){
 
     if(isAvailable){
       classes.push('available');
-      // 해당 일정의 룸 컬러 적용
+      // 해당 일정의 룸 컬러 - 옅은 배경 + 선명한 글자색
       var colorHex = COLOR_MAP[schedule.color] || '#3182F6';
-      cell.style.background = colorHex;
-      cell.style.color = '#fff';
+      cell.style.background = _hexToRgba(colorHex, 0.15);
+      cell.style.color = colorHex;
       cell.dataset.date = dateStr;
       cell.onclick = (function(ds){ return function(){ selectDate(ds); }; })(dateStr);
     }
