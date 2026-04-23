@@ -25,13 +25,8 @@ function applySettings(s){
   settings = s;
   lsSet('urefresh_settings', s);
 
-  // 헤로 타이틀/부제목 반영
+  // 헤로 타이틀 반영
   if(s.heroTitle) document.getElementById('hero-hl').textContent = s.heroTitle;
-  var subEl = document.getElementById('hero-sub');
-  if(subEl){
-    if(s.heroSub){ subEl.textContent = s.heroSub; subEl.style.display = 'block'; }
-    else        { subEl.textContent = '';          subEl.style.display = 'none'; }
-  }
 
   // 캘린더 초기 월은 schedules 로드 시 자동 이동하므로 여기서는 기본값만
   if(!calYear){
