@@ -19,30 +19,60 @@ var NOTICES = [];
 // 설정 로드 & 적용
 // ══════════════════════════════════════════════════════════
 function applySettings(s){
-  var days = ['일','월','화','수','목','금','토'];
   if(!s) return;
   settings = s;
   lsSet('urefresh_settings', s);
 
+  // 헤로 타이틀(문구)만 설정에서 가져옴
   if(s.heroTitle) document.getElementById('hero-hl').textContent = s.heroTitle;
-  if(s.start){
-    var sd = new Date(s.start);
-    document.getElementById('hero-start').textContent =
-      (sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+days[sd.getDay()]+')';
-    calYear  = sd.getFullYear();
-    calMonth = sd.getMonth();
-  }
-  if(s.end){
-    var ed = new Date(s.end);
-    document.getElementById('hero-end').textContent =
-      (ed.getMonth()+1)+'월 '+ed.getDate()+'일 ('+days[ed.getDay()]+')';
-  }
+
+  // 캘린더 초기 월은 schedules 로드 시 자동 이동하므로 여기서는 기본값만
   if(!calYear){
     var now = new Date();
     calYear  = now.getFullYear();
     calMonth = now.getMonth();
   }
   buildCalendar();
+  // 헤로의 신청 시작/마감은 일정들에서 계산 (이미 SCHEDULES_CACHE 있으면 즉시 반영)
+  _updateHeroPeriod();
+}
+
+// 모든 일정의 신청 기간 합집합 → 가장 이른 시작 / 가장 늦은 마감
+function _getOverallSchedulePeriod(){
+  if(!SCHEDULES_CACHE || !SCHEDULES_CACHE.length) return null;
+  var starts = [], ends = [];
+  SCHEDULES_CACHE.forEach(function(s){
+    if(s.start) starts.push(s.start);
+    if(s.end)   ends.push(s.end);
+  });
+  if(!starts.length && !ends.length) return null;
+  starts.sort();
+  ends.sort();
+  return {
+    start: starts[0] || '',
+    end:   ends[ends.length - 1] || ''
+  };
+}
+
+// 헤로 배너의 신청 시작/마감 값 갱신 (일정 기준)
+function _updateHeroPeriod(){
+  var days = ['일','월','화','수','목','금','토'];
+  var startEl = document.getElementById('hero-start');
+  var endEl   = document.getElementById('hero-end');
+  var p = _getOverallSchedulePeriod();
+  if(!p){
+    if(startEl) startEl.textContent = '-';
+    if(endEl)   endEl.textContent   = '-';
+    return;
+  }
+  if(p.start && startEl){
+    var sd = new Date(p.start);
+    startEl.textContent = (sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+days[sd.getDay()]+')';
+  }
+  if(p.end && endEl){
+    var ed = new Date(p.end);
+    endEl.textContent = (ed.getMonth()+1)+'월 '+ed.getDate()+'일 ('+days[ed.getDay()]+')';
+  }
 }
 
 function loadSettings(){
@@ -250,8 +280,8 @@ function loadApplicants(){
   apiGetAllApps()
     .then(function(rows){
       APPLICANTS_CACHE = Array.isArray(rows) ? rows : [];
-      if(selDate && selDate.isoDate){
-        selectDate(selDate.isoDate);
+      if(selDate && selDate.clickIsoDate){
+        selectDate(selDate.clickIsoDate);
       }
     })
     .catch(function(err){
@@ -295,8 +325,10 @@ function loadSchedules(){
 
       // 캘린더에 이용일 반영
       buildCalendar();
-      if(selDate && selDate.isoDate){
-        selectDate(selDate.isoDate);
+      // 헤로 배너 신청 시작/마감 갱신
+      _updateHeroPeriod();
+      if(selDate && selDate.clickIsoDate){
+        selectDate(selDate.clickIsoDate);
       }
     })
     .catch(function(err){
@@ -396,10 +428,17 @@ function goDetail(){
 // ══════════════════════════════════════════════════════════
 (function(){
   function tick(){
-    var end = settings && settings.end ? new Date(settings.end).getTime() : null;
+    var p   = _getOverallSchedulePeriod();
+    // schedule.end 는 'YYYY-MM-DD' → 해당 날짜의 23:59:59 로 치환
+    var endTs = null;
+    if(p && p.end){
+      var ed = new Date(p.end);
+      ed.setHours(23, 59, 59, 999);
+      endTs = ed.getTime();
+    }
     var el  = document.getElementById('timer-val');
-    if(!end){ if(el) el.textContent = '설정 중...'; return; }
-    var diff = Math.max(0, end - Date.now());
+    if(!endTs){ if(el) el.textContent = '일정 없음'; return; }
+    var diff = Math.max(0, endTs - Date.now());
     var d = Math.floor(diff / 86400000);
     var h = Math.floor(diff % 86400000 / 3600000);
     var m = Math.floor(diff % 3600000 / 60000);
