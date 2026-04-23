@@ -10,14 +10,7 @@ var COLOR_MAP = {
   green:'#05C072', blue:'#3182F6', navy:'#3D4FE0', purple:'#9B51E0'
 };
 
-function _hexToRgba(hex, alpha){
-  var h = String(hex || '').replace('#', '');
-  if(h.length !== 6) return hex;
-  var r = parseInt(h.substring(0,2), 16);
-  var g = parseInt(h.substring(2,4), 16);
-  var b = parseInt(h.substring(4,6), 16);
-  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
-}
+// hexToRgba / 날짜 유틸은 utils.js 로 이관됨
 var settings = null;
 var selDate  = null;  // { clickIsoDate, clickLabel, usageIsoDate, usageLabel, schedule, apply, slots, rate }
 var calYear, calMonth;
@@ -146,7 +139,7 @@ function buildCalendar(){
       classes.push('available');
       // 해당 일정의 룸 컬러 - 옅은 배경 + 선명한 글자색
       var colorHex = COLOR_MAP[schedule.color] || '#3182F6';
-      cell.style.background = _hexToRgba(colorHex, 0.15);
+      cell.style.background = hexToRgba(colorHex, 0.15);
       cell.style.color = colorHex;
       cell.dataset.date = dateStr;
       cell.onclick = (function(ds){ return function(){ selectDate(ds); }; })(dateStr);
@@ -181,37 +174,13 @@ function _getScheduleByApplicationWindow(isoDate){
   return null;
 }
 
-// ── 오늘 날짜를 YYYY-MM-DD 로 반환 ──
-function _todayIsoDate(){
-  var d = new Date();
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-
 // ── 신청 윈도우 상태 ──
 function _getApplicationState(schedule){
   if(!schedule) return 'no-schedule';
-  var today = _todayIsoDate();
+  var today = todayIso();
   if(schedule.start && today < schedule.start) return 'before';
   if(schedule.end   && today > schedule.end)   return 'after';
   return 'open';
-}
-
-// ── isoDate(YYYY-MM-DD) 를 한국어 라벨 'YYYY년 M월 D일' 로 ──
-function _isoToKoreanLabel(isoDate){
-  if(!isoDate) return '';
-  var p = String(isoDate).split('-');
-  if(p.length !== 3) return String(isoDate);
-  return parseInt(p[0]) + '년 ' + parseInt(p[1]) + '월 ' + parseInt(p[2]) + '일';
-}
-
-// ── isoDate 의 요일(일/월/…/토) ──
-function _isoWeekday(isoDate){
-  var p = String(isoDate).split('-');
-  if(p.length !== 3) return '';
-  var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-  return ['일','월','화','수','목','금','토'][d.getDay()];
 }
 
 function selectDate(dateStr){
@@ -219,13 +188,13 @@ function selectDate(dateStr){
   if(!schedule) return; // 클릭 가능 영역이 아니면 무시
 
   var state = _getApplicationState(schedule);
-  var clickLabel  = _isoToKoreanLabel(dateStr);
-  var clickDow    = _isoWeekday(dateStr);
-  var usageLabel  = _isoToKoreanLabel(schedule.date);
-  var usageDow    = _isoWeekday(schedule.date);
+  var clickLabel  = toKoreanLabel(dateStr);
+  var clickDow    = weekdayKor(dateStr);
+  var usageLabel  = toKoreanLabel(schedule.date);
+  var usageDow    = weekdayKor(schedule.date);
 
   // 신청 인원 집계는 '이용일' 기준
-  var apply = countAppsByDate_(usageLabel);
+  var apply = countAppsByDate_(schedule.date);
   var slots = Number(schedule.slots) || 0;
   var rate  = slots > 0 ? (apply / slots) : 0;
 
@@ -309,12 +278,12 @@ function loadSchedules(){
         // 서버가 긴 Date 포맷으로 반환하는 케이스 대비 정규화
         SCHEDULES_CACHE = rows.map(function(r){
           return {
-            date:  _normalizeIsoDate(r.date),
+            date:  toIsoDate(r.date),
             day:   r.day || '',
             room:  r.room || '',
             slots: Number(r.slots || 0),
-            start: _normalizeIsoDate(r.start),
-            end:   _normalizeIsoDate(r.end)
+            start: toIsoDate(r.start),
+            end:   toIsoDate(r.end)
           };
         });
       }
@@ -345,46 +314,14 @@ function loadSchedules(){
     });
 }
 
-function _normalizeIsoDate(v){
-  if(!v) return '';
-  var s = String(v).trim();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  var d = new Date(s);
-  if(isNaN(d.getTime())) return s;
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-
-// Google Sheets 이용일 값 → 한국어 라벨로 정규화
-function normalizeDateLabel_(v){
-  if(!v) return '';
-  var s = String(v);
-  if(s.indexOf('T') > -1){
-    var d = new Date(s);
-    if(!isNaN(d.getTime())){
-      return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일';
-    }
-  }
-  return s;
-}
-
-function countAppsByDate_(label){
+// 이용일 기준 신청자 수 집계 (취소 제외)
+// isoDate (YYYY-MM-DD) 로 매칭하여 라벨 불일치 문제 회피
+function countAppsByDate_(isoDate){
   return APPLICANTS_CACHE.filter(function(a){
     var status = String(a['상태'] || '');
     if(status === 'cancelled' || status === '취소됨') return false;
-    return normalizeDateLabel_(a['이용일']) === label;
+    return toIsoDate(a['이용일']) === isoDate;
   }).length;
-}
-
-// 날짜별 배정 구좌 수 (관리자가 일정관리에서 설정한 값)
-function getSlotsForDate_(isoDate){
-  for(var i = 0; i < SCHEDULES_CACHE.length; i++){
-    if(SCHEDULES_CACHE[i].date === isoDate){
-      return Number(SCHEDULES_CACHE[i].slots) || 0;
-    }
-  }
-  return 0; // 일정에 없는 날짜면 0
 }
 
 // ══════════════════════════════════════════════════════════
@@ -620,9 +557,9 @@ function searchMyApps(){
           return {
             eno:       String(r['사번'] || ''),
             name:      r['성명'] || '',
-            dateLabel: fmtDate_(r['이용일']),
+            dateLabel: toKoreanLabel(r['이용일']),
             fam:       r['동반가족수'] || r['동반가족'] || '',
-            at:        fmtAt_(r['신청일시']),
+            at:        _fmtAt(r['신청일시']),
             status:    r['상태'] || '신청완료',
             id:        'sheet_' + i + '_' + (r['사번'] || i)
           };
@@ -637,16 +574,8 @@ function searchMyApps(){
     });
 }
 
-function fmtDate_(v){
-  if(!v) return '';
-  if(String(v).indexOf('T') > -1){
-    var d = new Date(v);
-    return d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일';
-  }
-  return String(v);
-}
-
-function fmtAt_(v){
+// 신청일시 전용 짧은 포맷 'M.DD HH:MM'
+function _fmtAt(v){
   if(!v) return '';
   if(String(v).indexOf('T') > -1){
     var d = new Date(v);
@@ -759,15 +688,6 @@ function loadNotices(){
     });
 }
 
-function _fmtNoticeDate(iso){
-  if(!iso) return '';
-  var d = new Date(iso);
-  if(isNaN(d.getTime())) return String(iso);
-  return d.getFullYear() + '.' +
-    String(d.getMonth() + 1).padStart(2, '0') + '.' +
-    String(d.getDate()).padStart(2, '0');
-}
-
 function renderNoticeList(){
   var el = document.getElementById('notice-list');
   if(!el) return;
@@ -791,7 +711,7 @@ function renderNoticeList(){
       '<div class="ni-ico"><svg width="17" height="17" stroke="#3182F6"><use href="#i-doc"/></svg></div>' +
       '<div class="ni-body">' +
         '<div class="ni-t">' + title + '</div>' +
-        '<div class="ni-d">' + _fmtNoticeDate(n.createdAt) + (author ? ' · ' + author : '') + '</div>' +
+        '<div class="ni-d">' + toDotDate(n.createdAt) + (author ? ' · ' + author : '') + '</div>' +
       '</div>' +
       '<svg width="18" height="18" stroke="#B0B8C1"><use href="#i-fwd"/></svg>';
     (function(id){
@@ -805,7 +725,7 @@ function openNoticeDetail(id){
   var n = NOTICES.find(function(x){ return String(x.id) === String(id); });
   if(!n) return;
   document.getElementById('nd-title').textContent = n.title || '';
-  var meta = _fmtNoticeDate(n.createdAt) + (n.author ? ' · ' + n.author : '');
+  var meta = toDotDate(n.createdAt) + (n.author ? ' · ' + n.author : '');
   document.getElementById('nd-meta').textContent  = meta;
   document.getElementById('nd-body').textContent  = n.content || '';
   go('sc-notice-detail');
